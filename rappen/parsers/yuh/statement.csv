@@ -1,0 +1,18 @@
+﻿DATE;ACTIVITY TYPE;ACTIVITY NAME;DEBIT;DEBIT CURRENCY;CREDIT;CREDIT CURRENCY;CARD NUMBER;LOCALITY;RECIPIENT;SENDER;FEES/COMMISSION;BUY/SELL;QUANTITY;ASSET;PRICE PER UNIT
+01/05/2024;BANK_ORDER_EXECUTED;"""Exchange United States dollars""";;;2734.31;CHF;;;;;26.21;;3000;USD;0.911437
+02/05/2024;PAYMENT_TRANSACTION_OUT;"""Transfer to Anna Beispiel""";-2100.00;CHF;;;;;"""Anna Beispiel""";;0;;;;
+02/05/2024;PAYMENT_TRANSACTION_OUT;"""Transfer to Max Muster""";-1.00;CHF;;;;;"""Max Muster""";;0;;;;
+06/05/2024;PAYMENT_TRANSACTION_OUT;"""Transfer to Sanitas Grundversicherungen AG""";-362.15;CHF;;;;;"""Sanitas Grundversicherungen AG""";;0;;;;
+06/05/2024;PAYMENT_TRANSACTION_OUT;"""Transfer to Sanitas Grundversicherungen AG""";-362.15;CHF;;;;;"""Sanitas Grundversicherungen AG""";;0;;;;
+18/05/2024;CARD_TRANSACTION_OUT;"""SP ZENBIVY EUROPE""";-586.25;EUR;;;**** 0000;"""MILS, AT""";"""SP ZENBIVY EUROPE""";;0.0;;;;
+19/05/2024;REWARD_RECEIVED;"""Card bonus""";;;;;;;;;;;1;SWQ;
+20/05/2024;BANK_AUTO_ORDER_EXECUTED;"""Autoexchange Swiss francs""";-582.83;CHF;584.86;EUR;;;;;5.49;;;;0.996521
+22/05/2024;CARD_TRANSACTION_OUT;"""Klarsicht Optik AG""";-20.00;CHF;;;**** 0000;"""Zürich, CH""";"""Klarsicht Optik AG""";;0.0;;;;
+22/05/2024;CARD_TRANSACTION_OUT;"""Einwohnerkontrolle""";-20.00;CHF;;;**** 0000;"""Zürich, CH""";"""Einwohnerkontrolle""";;0.0;;;;
+24/05/2024;PAYMENT_TRANSACTION_IN;"""Transfer from REVOLUT""";;;400.00;CHF;;;;"""REVOLUT""";0;;;;
+27/05/2024;PAYMENT_ORDER_REJECTED;"""Transfer declined to Steueramt Zürich""";-120.00;CHF;;;;;"""Steueramt Zürich""";;;;;;
+28/05/2024;INVEST_ORDER_EXECUTED;"""2x Apple Inc.""";;;-500.00;CHF;;;;;0.95;BUY;2;AAPL;250.00
+30/05/2024;PAYMENT_TRANSACTION_IN;"""Transfer from ACME LTD""";;;6035.00;USD;;;;"""ACME LTD""";0;;;;
+31/05/2024;CARD_TRANSACTION_IN;"""Sixt Car Rental""";;;9.27;CHF;**** 0000;"""Basel, CH""";"""Sixt Car Rental""";;0.0;;;;
+31/05/2024;PAYMENT_TRANSACTION_OUT;"""Transfer to Max Muster""";-3504.42;USD;;;;;"""Max Muster""";;-4.42;;;;
+31/05/2024;CARD_TRANSACTION_OUT;"""Coop-1511 Stadelhofen""";-45.45;CHF;;;**** 0000;"""Zürich, CH""";"""Coop-1511 Stadelhofen""";;0.0;;;;

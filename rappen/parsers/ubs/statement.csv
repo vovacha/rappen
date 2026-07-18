@@ -1,0 +1,19 @@
+﻿Account number:;0000 00000000.00;
+IBAN:;CH00 0000 0000 0000 0000 0;
+From:;2026-09-01;
+Until:;2026-09-05;
+Opening balance:;;
+Closing balance:;;
+Valued in:;CHF;
+Numbers of transactions in this period:;9;
+
+Trade date;Trade time;Booking date;Value date;Currency;Debit;Credit;Individual amount;Balance;Transaction no.;Description1;Description2;Description3;Footnotes;
+2026-09-05;;2026-09-07;2026-09-05;CHF;-49.95;;;;0000001GK0000001;"SWISSCOM (SCHWEIZ) AG /; Payment UBS TWINT";;"Reason for payment: Musterstrasse 1 na, 8000 Zürich TWINT-Acc.:+41790000000; Transaction no. 0000001GK0000001";;
+2026-09-05;;2026-09-07;2026-09-05;CHF;;1000.00;;;0000002TQ0000002;"Peter Meier;Musterstrasse 1; 8000 Zürich; CH";e-banking credit;Transaction no. 0000002TQ0000002;;
+2026-09-04;15:11:31;2026-09-07;2026-09-04;CHF;-286.10;;;;0000003BN0000003;"Tierarztpraxis Muster;8000 Zürich";"00000000-0 01/30; Debit card payment";Transaction no. 0000003BN0000003;;
+2026-09-04;17:09:08;2026-09-07;2026-09-04;CHF;-63.90;;;;0000004BN0000004;"Coop-1511 Stadelhofen;8001 Zürich";"00000000-0 01/30; Debit card payment";Transaction no. 0000004BN0000004;;
+2026-09-04;09:04:03;2026-09-07;2026-09-04;CHF;-14.10;;;;0000005BN0000005;"SBB CFF FFS Mobile Ticke;0300 Bern";"00000000-0 01/30; Debit card payment";Transaction no. 0000005BN0000005;;
+2026-09-04;14:57:54;2026-09-07;2026-09-04;CHF;-14.10;;;;0000006BN0000006;"SBB CFF FFS Mobile Ticke;0300 Bern";"00000000-0 01/30; Debit card payment";Transaction no. 0000006BN0000006;;
+2026-09-04;17:52:05;2026-09-07;2026-09-04;CHF;-7.15;;;;0000007BN0000007;"VOLG Laden;8000 Zürich";"00000000-0 01/30; Debit card payment";Transaction no. 0000007BN0000007;;
+2026-09-02;;2026-09-02;2026-09-02;CHF;-12.80;;;;0000008GK0000008;"SBB MOBILE; Payment UBS TWINT";;"Reason for payment: - na, 3000 Bern; TWINT-Acc.:+41790000000; Transaction no. 0000008GK0000008";;
+2026-09-02;;2026-09-02;2026-09-02;CHF;-3.30;;;;0000009GK0000009;"SBB MOBILE; Payment UBS TWINT";;"Reason for payment: - na, 3000 Bern; TWINT-Acc.:+41790000000; Transaction no. 0000009GK0000009";;

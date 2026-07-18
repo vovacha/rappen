@@ -1,0 +1,203 @@
+# Example categories.yaml: the taxonomy and the rules that assign it (format in RULES.md).
+# `rappen init-db` copies it into the home directory; edit that copy, this one is the template.
+# A node has: name, optional children, optional match patterns, and two flags that children
+# inherit, both false by default:
+#   trip: true       counts as trip spend; set_trip tags it inside a trip's window
+#   transfer: true   money moved, not earned or spent; left out of cash_flow
+# A pattern is:
+#   "MIGROS"               whole word(s) in the description; `*` at either end relaxes that
+#                          boundary: GASTR* (Gastro, Gastronomie), *BAR (Mühlibar)
+#   {pattern: X}           the same, when guards are needed: sign: out|in, max_amount,
+#                          min_amount (abs), not: Y (a pattern that must be absent)
+#   {owner_mention: true}  names the owner (`owner:` below): a move between own accounts
+# The longest match wins; a tie between categories, or no match, leaves the row for manual review.
+# A rule earns its place by matching repeatedly; one-off merchants are categorized by hand.
+
+owner: [MUSTER, MAX]      # your name as banks print it
+
+categories:
+  - name: Income
+    children:
+      - name: Salary
+        match: [ACME TECHNOLOGIES]
+      - name: Other Income          # resale, interest, reimbursements — mostly manual
+        match:
+          - { pattern: RICARDO, sign: in }
+          - INTEREST
+
+  - name: Housing
+    children:
+      - name: Rent
+        match: [ANNA BEISPIEL]          # the landlord
+      - name: Utilities
+        match: [STADTWERK, SERAFE]
+      - name: Telecom
+        match: [SWISSCOM*, YALLO, SUNRISE, INIT7]
+
+  - name: Food
+    trip: true
+    children:
+      - name: Groceries
+        match:
+          - MIGROS
+          - MIGROLINO
+          - COOP
+          - ALDI
+          - DENNER
+          - SPAR
+          - VOLG
+          - K-KIOSK
+          - KIOSK
+          - SELECTA
+          - ALBERT HEIJN
+          - BÄCKEREI*
+          - BACKWAREN
+          - BOULANGERIE*
+          - BAKKERIJ
+          - EPICERIE
+      - name: Restaurants
+        match:
+          - RESTAURANT*
+          - RISTORANTE
+          - PIZZERIA*
+          - BISTRO
+          - TAVERNE
+          - WEINSTUBE
+          - "*GASTHAUS*"
+          - GASTR*
+          - "*BAR"
+          - PUB
+          - "*CAFE*"
+          - "*CAFÉ"
+          - CAFFÈ
+          - COFFEE
+          - KAFI
+          - "*KAFFEE*"
+          - GELATO
+          - CHOCOLATERIE
+          - TAKE AWAY
+          - KEBAB
+          - MCDONALD*
+          - BURGER KING
+          - STARBUCKS
+          - LÄDERACH
+
+  - name: Transport      # getting around, at home or on a trip: rail, bus, flights, rental cars, fuel, parking, cable cars
+    trip: true
+    match:
+      - ZVV
+      - SBB*
+      - RATP
+      - HVV
+      - FLIXBUS
+      - DEUTSCHE BAHN
+      - EASYJET
+      - SIXT
+      - HERTZ
+      - TESLA
+      - SHELL
+      - AVIA
+      - "BP"
+      - TANKSHOP*
+      - PARKHAUS*
+      - LUFTSEILBAHN
+      - BERGBAHN*
+      - MATTERHORN GOTTHARD
+      - SCHIFFFAHRT
+      - STOOS
+
+  - name: Accommodation  # any lodging; a small hotel charge is often a meal — review by hand
+    trip: true
+    match:
+      - BOOKING.COM
+      - "*HOTEL*"
+      - HOSTEL*
+      - LODGE
+      - STOOS LODGE
+      - MOTEL ONE
+
+  - name: Shopping
+    trip: true
+    children:
+      - name: Electronics
+        match: [DIGITEC, GALAXUS, BRACK*]
+      - name: Home
+        match: [IKEA]
+      - name: Clothing
+        match: [H&M, ZARA, DECATHLON, DEICHMANN]
+      - name: General          # generic/one-off retail
+        match: [DUTY FREE]
+
+  - name: Health
+    children:
+      - name: Pharmacy
+        match: [APOTHEKE*, APOTHEEK, DROPA, AMAVITA, COOP VITALITY, DROGERIE]
+      - name: Personal Care
+        match: [BARBERSHOP, COIFFEUR]
+      - name: Fitness
+        match: [HALLENBAD, SCHWIMMBAD]
+      - name: Medical           # doctors, dentists, opticians; insurance refunds stay in Insurance
+        match: [ZAHNARZT*, OPTIK]
+
+  - name: Insurance
+    match: ["AXA", REGA]
+    children:
+      - name: Health Insurance   # Krankenkasse: its own total for the tax return
+        match: [SANITAS]
+
+  - name: Digital
+    children:
+      - name: Software
+        match:
+          - GITHUB
+          - PROTON
+          - 1PASSWORD
+          - { pattern: APPLE, not: APPLE PAY, max_amount: 20 }
+      - name: Streaming
+        match: [NETFLIX, YOUTUBE, SPOTIFY]
+      - name: AI
+        match: [ANTHROPIC, OPENAI, CHATGPT]
+
+  - name: Entertainment
+    trip: true
+    match: [CINEMA, "KINO", MUSEUM]
+
+  - name: Education
+    match: [UDEMY, AMAZON KINDLE]
+
+  - name: Pets
+    match: [QUALIPET, "DR. MED. VET"]
+
+  - name: Gifts
+    match: [BLUME 3000]
+
+  - name: Taxes
+    match: [STEUER*]
+
+  - name: Other        # catch-all: bank/postage fees, admin/permits, fines, and genuine misc
+    trip: true
+    match:
+      - DIE POST
+      - POST CH AG
+      - NOTARIAT
+      - EINWOHNERKONTROLLE
+      - BANKING PACKAGE
+
+  # Transfer categories are left out of cash_flow: a total over them is both legs of every move
+  # and means nothing. What you hold at the other end (3a, a loan out) belongs in holdings.
+  - name: Transfers          # money moving between your own accounts
+    transfer: true
+    match:
+      - { pattern: "*EXCHANGE*", not: EXCHANGE RATE }   # Revolut "Exchanged to", Yuh "Exchange"/"Autoexchange"
+      - { owner_mention: true }
+      - REVOLUT
+      - POSTFINANCE AG
+      - ZEN.COM
+      - TRANSFER TO ACCOUNT
+      - TRANSFER FROM ACCOUNT
+    children:
+      - name: Pillar 3a          # contributions: own asset, tracked in holdings; totalled for the tax return
+        match: [FINPENSION]
+
+  - name: Loans              # money lent to / borrowed from others; assigned by hand
+    transfer: true

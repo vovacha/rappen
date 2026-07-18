@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.db
+*.db-wal
+*.db-shm
+*.db.bak-*
+/*.csv
+/*.pdf
+/categories.yaml*
+.pytest_cache/
