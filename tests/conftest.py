@@ -3,9 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from rappen import parsers
+from rappen import config, parsers
 
-REPO = Path(__file__).resolve().parents[1]
 STATEMENTS = {name: next(Path(bank.__file__).parent.glob("statement.*")) for name, bank in parsers.load().items()}
 
 
@@ -13,7 +12,7 @@ STATEMENTS = {name: next(Path(bank.__file__).parent.glob("statement.*")) for nam
 def home(tmp_path, monkeypatch):
     """A fresh home per test with the example rules; the DB is created on first use."""
     monkeypatch.setenv("RAPPEN_HOME", str(tmp_path))
-    shutil.copy(REPO / "categories.example.yaml", tmp_path / "categories.yaml")
+    shutil.copy(config.EXAMPLE_RULES, tmp_path / "categories.yaml")
     return tmp_path
 
 

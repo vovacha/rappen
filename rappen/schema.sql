@@ -1,4 +1,5 @@
--- rappen schema. Applied idempotently on every connection. Categories and trips are not
+-- rappen schema, always the current one: applied idempotently on every connection, after the
+-- migrations in db.py have brought an older database up to it. Categories and trips are not
 -- tables: a transaction carries their names. The taxonomy lives in categories.yaml.
 
 CREATE TABLE IF NOT EXISTS transactions (
@@ -25,7 +26,7 @@ CREATE TABLE IF NOT EXISTS holdings (
     id          INTEGER PRIMARY KEY,
     name        TEXT    NOT NULL UNIQUE,
     description TEXT,
-    value_chf   REAL    NOT NULL,
+    value       REAL    NOT NULL,                 -- in the base currency
     updated_at  TEXT    NOT NULL
 );
 

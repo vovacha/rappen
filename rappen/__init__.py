@@ -1,1 +1,1 @@
-"""rappen — PostFinance, Revolut and Yuh exports in one SQLite ledger."""
+"""rappen — bank exports in one SQLite ledger, exposed over MCP and a CLI."""

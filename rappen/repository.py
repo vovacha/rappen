@@ -143,7 +143,7 @@ _BUCKETS = {
 def totals(
     conn: Conn, *, group_by: str | None = None, excluded: list[str] = (), **filters
 ) -> list[sqlite3.Row]:
-    """Income/expense/count per (bucket, currency); the service folds currencies to CHF.
+    """Income/expense/count per (bucket, currency); the service folds currencies to the base one.
     `excluded` categories (transfer=true) are left out; uncategorized rows always count."""
     if group_by not in _BUCKETS:
         raise ValueError(f"unknown group_by {group_by!r}; known: {sorted(k for k in _BUCKETS if k)}")
@@ -216,6 +216,11 @@ def stored_categories(conn: Conn) -> list[str]:
     return [r[0] for r in rows]
 
 
+def stored_currencies(conn: Conn) -> list[str]:
+    rows = conn.execute("SELECT DISTINCT currency FROM transactions").fetchall()
+    return [r[0] for r in rows]
+
+
 def coverage(conn: Conn) -> tuple[int, int]:
     """(total transactions, uncategorized transactions)."""
     total = conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0]
@@ -232,7 +237,7 @@ def _holding(row: sqlite3.Row) -> Holding:
         id=row["id"],
         name=row["name"],
         description=row["description"],
-        value_chf=row["value_chf"],
+        value=row["value"],
         updated_at=row["updated_at"],
     )
 
@@ -242,17 +247,17 @@ def list_holdings(conn: Conn) -> list[Holding]:
     return [_holding(r) for r in rows]
 
 
-def set_holding(conn: Conn, name: str, value_chf: float, description: str | None, now: str) -> Holding:
+def set_holding(conn: Conn, name: str, value: float, description: str | None, now: str) -> Holding:
     conn.execute(
         """
-        INSERT INTO holdings (name, description, value_chf, updated_at)
-        VALUES (:name, :description, :value_chf, :now)
+        INSERT INTO holdings (name, description, value, updated_at)
+        VALUES (:name, :description, :value, :now)
         ON CONFLICT (name) DO UPDATE SET
             description = :description,
-            value_chf   = :value_chf,
+            value       = :value,
             updated_at  = :now
         """,
-        {"name": name, "description": description, "value_chf": value_chf, "now": now},
+        {"name": name, "description": description, "value": value, "now": now},
     )
     row = conn.execute("SELECT * FROM holdings WHERE name = ?", (name,)).fetchone()
     return _holding(row)

@@ -1,5 +1,5 @@
 ---
-name: personal-finance-rappen
+name: rappen
 description: "Use when the user asks about personal finances tracked in Rappen: spending, trends, trips, savings, budget, net worth and holdings, subscriptions, checks on single charges, tax figures, statement imports, categories and rules, or the database file. Query and maintain the ledger only through Rappen MCP tools."
 license: MIT
 metadata:
@@ -11,11 +11,24 @@ metadata:
 
 ## Overview
 
-Rappen is a personal ledger. You export the statements from your banks and import them; every transaction gets a category from rules you write yourself in `categories.yaml`, what the rules miss you set by hand, and a category set by hand is never overwritten by a rule. Then you ask: what did I spend and on what, how does it compare to last year, what did the trip cost, how much is left over each month. Money moved between your own accounts is a transfer and stays out of those totals. What you own and what you pay for regularly you type in yourself: the holdings add up to your net worth, the subscriptions are a list. Rows keep their own currency; totals are in CHF. There are no budgets.
+Rappen is a personal ledger. You export the statements from your banks and import them; every transaction gets a category from rules you write yourself in `categories.yaml`, what the rules miss you set by hand, and a category set by hand is never overwritten by a rule. Then you ask: what did I spend and on what, how does it compare to last year, what did the trip cost, how much is left over each month. Money moved between your own accounts is a transfer and stays out of those totals. What you own and what you pay for regularly you type in yourself: the holdings add up to your net worth, the subscriptions are a list. Rows keep their own currency; totals are in one base currency, set in `categories.yaml` and named in every total. There are no budgets.
 
 ## Workflows
 
 What the user says, and how to answer it. Category names are the example yaml's; the user's own apply.
+
+**First run**
+
+- *There is no categories.yaml yet: every tool says so and names the example.*
+  One conversation, in this order. Every step is a proposal the user approves or changes; only the name is asked outright. Nothing is written before step 6.
+  1. **Name.** Ask for it exactly as their banks print it (`owner`), often surname and given name in capitals and in either order; both go in the list.
+  2. **Currencies.** Ask where they live and which banks they use, then propose the base currency (`currency`) and the other currencies those banks are likely to hold, each with a rate from what you know, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
+  3. **Categories.** Propose a two-level tree after `categories.example.yaml`, fitted to what you know so far: rent or own, car, pets, children, pension contributions, investments. Merchants are not proposed; rules come from the first imports.
+  4. **Transfers.** Propose which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
+  5. **Trip spend.** Propose which count as trip spend when a trip's window is tagged: food, transport, accommodation, shopping, entertainment, and not rent, insurance, subscriptions. `trip: true`.
+  6. **Plan.** Read it all back in one message: owner, currency and rates, the tree with its flags. On agreement write the yaml, keeping the example's Transfers patterns (they are the supported banks' own strings) and none of its merchants, owner or rates, then `set_rules(text)` and say the ledger is ready for its first statement.
+- *An import is refused: no rate for a currency.*
+  Propose one, have it confirmed, add it under `rates` via `get_rules` / `set_rules`, import again.
 
 **Keeping the ledger true**
 
@@ -50,7 +63,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 - *Which categories grew most against last year?*
   One `cash_flow(group_by="category")` per year, bucket by bucket.
 - *Groceries feel expensive: more visits, or bigger baskets?*
-  `cash_flow(category="Groceries", group_by="month")`: `txn_count` is the visits, `expense_chf / txn_count` the basket.
+  `cash_flow(category="Groceries", group_by="month")`: `txn_count` is the visits, `expense / txn_count` the basket.
 - *Did the numbers change after I cancelled something, switched insurer, moved, got a raise?*
   Two `cash_flow` calls, before and after the date.
 
@@ -61,7 +74,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 - *The flights and the hotel were paid months earlier.*
   `set_trip_rows(ids, name)`; `set_trip_rows(ids, None)` removes a stray, like a laptop bought on the road.
 - *What did the trip cost, in total and per day?*
-  `cash_flow(trip=name)`: the cost is `−net_chf`. Per day over the trip's dates, which the user gives; Rappen does not keep them.
+  `cash_flow(trip=name)`: the cost is `−net`. Per day over the trip's dates, which the user gives; Rappen does not keep them.
 - *What did I spend on the trip, per category?*
   `cash_flow(trip=name, group_by="category")`.
 - *My companion paid me back part of it. I paid a friend my share of the apartment.*
@@ -78,20 +91,20 @@ What the user says, and how to answer it. Category names are the example yaml's;
 **Budget tracking**
 
 - *How much is free on an average month, and what does a rent increase do to it?*
-  `cash_flow(group_by="month")`: average `net_chf`, minus the increase.
+  `cash_flow(group_by="month")`: average `net`, minus the increase.
 - *Which large payments come up next quarter: insurance, taxes, yearly renewals?*
   Last year's same quarter with `list_transactions(date_from, date_to, direction="out")`, and the yearly rows of `list_subscriptions`.
 - *How many months of expenses does my net worth cover?*
-  `net_worth` over the average monthly `expense_chf`.
+  `net_worth` over the average monthly `expense`.
 - *Spent, remaining and pace per category; move an amount between categories; next year's budgets from this year's actuals.*
   Budgets are not built. Say so; offer `cash_flow(group_by="category")` for the year as the starting point.
 
 **Savings**
 
 - *How much did I save so far this year, and where does that pace land in December?*
-  `cash_flow(date_from=1 Jan, date_to=today)`: saved is `net_chf`; the pace is net per elapsed month, times twelve.
+  `cash_flow(date_from=1 Jan, date_to=today)`: saved is `net`; the pace is net per elapsed month, times twelve.
 - *What share of my income stays, now and a year ago?*
-  `net_chf / income_chf`, for both windows.
+  `net / income`, for both windows.
 
 **Subscriptions**
 
@@ -105,7 +118,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 - *My net worth now: accounts, pillars, deposits, crypto and stocks, loans out, debts.*
   `net_worth`.
 - *I checked the app, Revolut holds 4200 now. The yearly 3a statement came.*
-  `set_holding("revolut", 4200, "all currencies, CHF")`; roughly right, not live.
+  `set_holding("revolut", 4200, "all currencies")`; roughly right, not live.
 - *I lent money to a friend.*
   `set_holding(name, amount)` as a receivable; its rows `set_category(ids, "Loans")`. When repaid, `delete_holding(name)` or set what is still open.
 
@@ -140,12 +153,12 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 ## Rendering
 
-The user reads answers on a small screen: proportional text, no code blocks, no tables, short lines. Bold the headline figure, `·` as separator, amounts as `1,234.50 CCY` with their sign, dates as `14 Jul` / `14 Jul 23:36`, child categories as `Parent → Child`. No IDs and no account names on screen; the user points at a row by merchant and amount.
+The user reads answers on a small screen: proportional text, no code blocks, no tables, short lines. Bold the headline figure, `·` as separator, amounts as `1,234.50 CCY` with their sign (the row's currency, or the base currency for totals), dates as `14 Jul` / `14 Jul 23:36`, child categories as `Parent → Child`. No IDs and no account names on screen; the user points at a row by merchant and amount.
 
-- **Transaction row:** `14 Jul 23:36 · Tesla · Transport · −16.27 CHF`
-- **Cash flow:** `**Aug 2026** · in +7,439.10 · out −5,230.40 · net **+2,208.70 CHF**`, then ranked bullets `• Food 1,023.06 CHF (Restaurants 697.52 · Groceries 325.54)`. Month trend: `• Jul · out 4,102.30 · net +1,020.00 CHF` per month.
-- **Trip:** `**Balkans 2026** · 1–22 Aug · **3,382.50 CHF** · 107 rows`; with reimbursements `**2,950.00 CHF** (3,740.00 out · 790.00 back)`. Then category bullets.
-- **Net worth:** `**Net worth 123,456.78 CHF**`, then `• revolut · 4,200.00 CHF · all currencies` per holding.
+- **Transaction row:** `14 Jul 23:36 · Tesla · Transport · −16.27 CCY`
+- **Cash flow:** `**Aug 2026** · in +7,439.10 · out −5,230.40 · net **+2,208.70 CCY**`, then ranked bullets `• Food 1,023.06 CCY (Restaurants 697.52 · Groceries 325.54)`. Month trend: `• Jul · out 4,102.30 · net +1,020.00 CCY` per month.
+- **Trip:** `**Balkans 2026** · 1–22 Aug · **3,382.50 CCY** · 107 rows`; with reimbursements `**2,950.00 CCY** (3,740.00 out · 790.00 back)`. Then category bullets.
+- **Net worth:** `**Net worth 123,456.78 CCY**`, then `• revolut · 4,200.00 CCY · all currencies` per holding.
 - **Subscriptions:** `• Netflix · 9.99 EUR monthly · card`.
 - **Import:** `Imported yuh · 34 parsed · 31 new · 3 duplicates · 2 Aug – 30 Aug 2026`, then **Uncategorized (2)** and **Categorized (29)** as transaction rows.
 - **Set trip:** `**Balkans 2026** · 1–22 Aug · 100 rows in the trip · 12 rows in those dates are not`, then both lists as transaction rows.

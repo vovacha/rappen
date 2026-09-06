@@ -65,7 +65,8 @@ def cash_flow(
     trip: str | None = None,
     include_transfers: bool = False,
 ) -> dict:
-    """Income, expense and net in CHF over a period (dates inclusive), plus buckets by
+    """Income, expense and net in the base currency (named in the result) over a period
+    (dates inclusive), plus buckets by
     `group_by`: 'month', 'account', 'currency', 'category' (parents with children nested,
     largest expense first) or 'trip' (tagged rows only); None gives totals only. `category`
     filters to one category and its children; `trip` to one trip by name ('*' = any trip).
@@ -150,15 +151,16 @@ def delete_trip(name: str) -> int:
 
 @mcp.tool()
 def net_worth() -> dict:
-    """Net worth in CHF: the sum of the hand-maintained holdings (bank balances, pillar 2/3,
+    """Net worth in the base currency: the sum of the hand-maintained holdings (bank balances, pillar 2/3,
     deposits, crypto and stocks, loans out, debts), plus the holdings themselves."""
     return _dump(service.net_worth())
 
 
 @mcp.tool()
-def set_holding(name: str, value_chf: float, description: str | None = None) -> dict:
-    """Create or update a holding by name. Positive = asset or receivable, negative = debt."""
-    return _dump(service.set_holding(name, value_chf, description))
+def set_holding(name: str, value: float, description: str | None = None) -> dict:
+    """Create or update a holding by name. `value` is in the base currency; positive = asset
+    or receivable, negative = debt."""
+    return _dump(service.set_holding(name, value, description))
 
 
 @mcp.tool()
@@ -181,12 +183,13 @@ def set_subscription(
     amount: float,
     cadence: str,
     payment: str,
-    currency: str = "CHF",
+    currency: str | None = None,
     active: bool = True,
     notes: str | None = None,
 ) -> dict:
     """Create or update a subscription by name. `amount` is the per-charge price (positive);
-    `cadence` is 'monthly' or 'yearly'; `payment` is 'apple_store', 'paypal', or 'card'."""
+    `cadence` is 'monthly' or 'yearly'; `payment` is 'apple_store', 'paypal', or 'card';
+    `currency` defaults to the base currency."""
     return _dump(service.set_subscription(
         name, amount, cadence, payment, currency=currency, active=active, notes=notes,
     ))

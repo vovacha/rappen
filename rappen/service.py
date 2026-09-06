@@ -9,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 
 from . import db, importer, repository, rules
-from .config import RATES
 from .models import (
     Bucket, CashFlow, Category, Holding, ImportResult, NetWorth, Subscription, Transaction,
 )
@@ -39,7 +38,7 @@ def cash_flow(
     *, group_by: str | None = None, category: str | None = None, trip: str | None = None,
     include_transfers: bool = False, **filters
 ) -> CashFlow:
-    """Income/expense/net in CHF for the filtered rows, plus one bucket per `group_by` value
+    """Income/expense/net in the base currency for the filtered rows, plus one bucket per `group_by` value
     (month, account, currency, category, trip). Category buckets are top-level parents with
     their children nested; trip buckets are only trips. Transfer categories are excluded
     unless `include_transfers`."""
@@ -51,6 +50,9 @@ def cash_flow(
     with db.session() as conn:
         rows = repository.totals(conn, group_by=group_by, excluded=excluded, categories=categories,
                                  trip=trip, **filters)
+    unrated = {r["currency"] for r in rows} - set(taxonomy.rates)
+    if unrated:
+        raise ValueError(f"no rate in categories.yaml for {sorted(unrated)}, which the ledger holds rows in")
 
     def label(key: object) -> str:
         return key or "uncategorized" if group_by == "category" else str(key)
@@ -59,7 +61,7 @@ def cash_flow(
     children: dict[object, dict[object, list[float]]] = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, 0]))
     total = [0.0, 0.0, 0]
     for r in rows:
-        rate = RATES[r["currency"]]
+        rate = taxonomy.rates[r["currency"]]
         add = (r["income"] * rate, r["expense"] * rate, r["txn_count"])
         key = r["bucket"]
         if group_by == "category" and key:
@@ -74,10 +76,10 @@ def cash_flow(
         _bucket(label(key), acc, [_bucket(label(ck), cacc) for ck, cacc in sorted(children[key].items(), key=lambda kv: -kv[1][1])])
         for key, acc in sums.items()
     ]
-    buckets.sort(key=lambda b: (-b.expense_chf, b.name) if group_by in ("category", "trip") else b.name)
+    buckets.sort(key=lambda b: (-b.expense, b.name) if group_by in ("category", "trip") else b.name)
     if group_by is None:
         buckets = []
-    return CashFlow(*_money(total), buckets=buckets)
+    return CashFlow(*_money(total), currency=taxonomy.currency, buckets=buckets)
 
 
 def _accumulate(acc: list, add: tuple) -> None:
@@ -123,9 +125,14 @@ def get_rules() -> str:
 
 
 def set_rules(text: str) -> dict:
-    """Replace categories.yaml (validated first) and fill uncategorized rows with the new rules.
-    Stored categories are never overwritten."""
-    compiled = rules.save(text)
+    """Replace categories.yaml (validated first, and against the currencies the ledger holds)
+    and fill uncategorized rows with the new rules. Stored categories are never overwritten."""
+    compiled = rules.Rules(text)
+    with db.session() as conn:
+        unrated = set(repository.stored_currencies(conn)) - set(compiled.rates)
+    if unrated:
+        raise ValueError(f"no rate for {sorted(unrated)}, which the ledger holds rows in; nothing changed")
+    rules.save(text)
     return {"categories": len(compiled.categories), **categorize()}
 
 
@@ -178,12 +185,12 @@ def net_worth() -> NetWorth:
     """The sum of the hand-maintained holdings; nothing is derived from transactions."""
     with db.session() as conn:
         holdings = repository.list_holdings(conn)
-    return NetWorth(net_worth_chf=round(sum(h.value_chf for h in holdings), 2), holdings=holdings)
+    return NetWorth(total=round(sum(h.value for h in holdings), 2), currency=rules.load().currency, holdings=holdings)
 
 
-def set_holding(name: str, value_chf: float, description: str | None = None) -> Holding:
+def set_holding(name: str, value: float, description: str | None = None) -> Holding:
     with db.session() as conn:
-        return repository.set_holding(conn, name, value_chf, description, _now())
+        return repository.set_holding(conn, name, value, description, _now())
 
 
 def delete_holding(name: str) -> int:
@@ -201,13 +208,14 @@ def set_subscription(
     amount: float,
     cadence: str,
     payment: str,
-    currency: str = "CHF",
+    currency: str | None = None,
     active: bool = True,
     notes: str | None = None,
 ) -> Subscription:
+    """`currency` defaults to the base currency."""
     with db.session() as conn:
         return repository.set_subscription(
-            conn, name, amount, currency, cadence, payment, active, notes
+            conn, name, amount, currency or rules.load().currency, cadence, payment, active, notes
         )
 
 

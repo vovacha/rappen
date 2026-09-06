@@ -1,14 +1,17 @@
 # Categorization rules
 
-Rappen assigns a category to every imported row from `categories.yaml`, a file you own. It
-lives in the home directory next to `rappen.db` (the checkout by default, `RAPPEN_HOME` to
-move it). `rappen init-db` copies `categories.example.yaml` there; edit the copy. Every
-command reads the file, so a change needs no restart.
+Rappen assigns a category to every imported row from `categories.yaml`, a file you own, which
+also names you, your base currency and the rates. It lives next to `rappen.db` in the checkout,
+and nothing works until it exists: every tool says so and points at `categories.example.yaml`,
+which your agent adapts and installs with `set_rules`. Every command reads the file, so a change
+needs no restart.
 
 ## The file
 
 ```yaml
 owner: [MUSTER, MAX]          # your name as banks print it (see owner_mention)
+currency: CHF                 # what totals are in
+rates: { EUR: 0.94, USD: 0.80 }   # one unit of each other currency in it
 
 categories:
   - name: Food
@@ -25,6 +28,13 @@ categories:
       - { pattern: "*EXCHANGE*", not: EXCHANGE RATE }
 ```
 
+`owner` and `currency` are required; a file without them is rejected, so no placeholder name can
+slip through. `currency` is what every total is in; rows keep their own. `rates` gives one unit
+of each other currency in it, typed by hand and never fetched, and grows as needed: a statement
+in a currency that has no rate is rejected before anything is imported, naming the currency, so
+you add the rate and import again. A yaml that drops a rate the ledger already holds rows in is
+rejected too.
+
 A node has a `name`, optional `children` (two levels at most), optional `match` patterns, and
 two flags that children inherit, both false by default:
 
@@ -34,7 +44,7 @@ two flags that children inherit, both false by default:
   of `cash_flow` unless asked for. A total over such a category is both legs of every move and
   means nothing; what you hold at the other end (3a, a loan out) is a holding.
 
-Anything else in a node or a pattern, a misspelt flag or guard included, is rejected.
+Anything else at the top level, in a node or in a pattern, a misspelt key included, is rejected.
 
 A transaction stores the category name; there is no categories table. Renaming one in the yaml
 creates a new category; rows keep the old name (`cash_flow` shows it as its own bucket) until you

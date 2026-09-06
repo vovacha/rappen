@@ -2,6 +2,8 @@ import pytest
 
 from rappen import rules
 
+HEAD = "owner: [MUSTER]\ncurrency: CHF\n"
+
 CASES = [
     ("Migros", -20, "Groceries"),
     ("NETFLIX.COM", -12, "Streaming"),
@@ -61,22 +63,49 @@ def test_classify(desc, amount, expected):
     ("КИЇВСТАРТ", None),
 ])
 def test_cyrillic_patterns(desc, expected):
-    cyrillic = rules.Rules("categories:\n  - name: Telecom\n    match: [КИЇВСТАР]\n")
+    cyrillic = rules.Rules(HEAD + "categories:\n  - name: Telecom\n    match: [КИЇВСТАР]\n")
     assert cyrillic.classify(desc, -150) == expected
 
 
-@pytest.mark.parametrize("bad", [
+BAD_CATEGORIES = [
     "categories: nope",
     "categories:\n  - name: Food\n    match: MIGROS\n",              # a scalar would match letter by letter
     "categories:\n  - name: Transfers\n    transfer: 'false'\n",
     "categories:\n  - name: Rent\n    trip:\n",
     "categories:\n  - name: Food\n  - name: Food\n",
-    "owner: MUSTER\ncategories: []\n",
     "categories:\n  - name: Rent\n    fixd: true\n",                        # a typo would silently drop the flag
     "categories:\n  - name: A\n    children:\n      - name: B\n        children: [{name: C}]\n",
     "categories:\n  - name: Software\n    match: [{pattern: APPLE, not_contains: APPLE PAY}]\n",  # the old key; `not` would be silently lost
     "categories:\n  - name: Food\n    match: ['*']\n",                                # matches everything
-])
+]
+BAD_HEADS = [
+    "categories: []\n",                                                  # neither owner nor currency
+    "currency: CHF\ncategories: []\n",                                   # no owner: the placeholder must not pass
+    "owner: [MUSTER]\ncategories: []\n",                                 # no base currency
+    "owner: MUSTER\ncurrency: CHF\ncategories: []\n",
+    "owner: []\ncurrency: CHF\ncategories: []\n",
+    "owner: [MUSTER]\ncurrency: 5\ncategories: []\n",
+    "owner: [MUSTER]\ncurrency: CHF\nowners: [MAX]\ncategories: []\n",  # a top-level typo would silently drop the key
+    HEAD + "rates: [0.94]\ncategories: []\n",
+    HEAD + "rates: {EUR: -0.94}\ncategories: []\n",
+    HEAD + "rates: {EUR: true}\ncategories: []\n",
+]
+
+
+@pytest.mark.parametrize("bad", [HEAD + b for b in BAD_CATEGORIES] + BAD_HEADS)
 def test_malformed_files_are_rejected(bad):
     with pytest.raises(ValueError):
         rules.Rules(bad)
+
+
+def test_base_currency_has_rate_one():
+    money = rules.Rules("owner: [MUSTER]\ncurrency: EUR\nrates: {USD: 0.9}\ncategories: []\n")
+    assert (money.currency, money.rates) == ("EUR", {"USD": 0.9, "EUR": 1.0})
+
+
+def test_first_set_rules_needs_no_file_or_directory(home, monkeypatch):
+    monkeypatch.setenv("RAPPEN_HOME", str(home / "fresh"))
+    with pytest.raises(ValueError, match="set_rules"):
+        rules.text()
+    saved = rules.save((home / "categories.yaml").read_text(encoding="utf-8"))
+    assert rules.load().names() == saved.names()

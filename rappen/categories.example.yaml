@@ -1,5 +1,5 @@
 # Example categories.yaml: the taxonomy and the rules that assign it (format in RULES.md).
-# `rappen init-db` copies it into the home directory; edit that copy, this one is the template.
+# Your own categories.yaml is written with set_rules; this one is the template and the tests' fixture.
 # A node has: name, optional children, optional match patterns, and two flags that children
 # inherit, both false by default:
 #   trip: true       counts as trip spend; set_trip tags it inside a trip's window
@@ -14,6 +14,8 @@
 # A rule earns its place by matching repeatedly; one-off merchants are categorized by hand.
 
 owner: [MUSTER, MAX]      # your name as banks print it
+currency: CHF                # what totals are in
+rates: { EUR: 0.94, USD: 0.80, UAH: 0.019, CZK: 0.038 }   # one unit of each other currency in it; totals only, rows stay native
 
 categories:
   - name: Income

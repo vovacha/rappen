@@ -1,5 +1,6 @@
-"""categories.yaml -> taxonomy + classify(). The file is personal config in the home directory
-(see RULES.md); `load()` reads it on every call so an updated file needs no restart."""
+"""categories.yaml -> taxonomy + classify(), base currency and rates. The file is personal
+config in the home directory (see RULES.md); `load()` reads it on every call so an updated
+file needs no restart."""
 
 from __future__ import annotations
 
@@ -9,13 +10,14 @@ from typing import Callable
 
 import yaml
 
-from .config import rules_path
+from .config import EXAMPLE_RULES, rules_path
 from .models import Category
 
 _OWNER_PRIORITY = 100
 _FLAGS = {"trip": False, "transfer": False}
 _KEYS = {"name", "children", "match", *_FLAGS}
 _PATTERN_KEYS = {"pattern", "not", "sign", "min_amount", "max_amount", "owner_mention"}
+_TOP_KEYS = {"owner", "currency", "rates", "categories"}
 
 Predicate = Callable[[str, float], bool]
 
@@ -96,6 +98,20 @@ def _flatten(nodes: list, parent: str | None, inherited: dict):
         yield from _flatten(node.get("children", []), node["name"], flags)
 
 
+def _money(doc: dict) -> tuple[str, dict[str, float]]:
+    """The base currency totals are in, and one unit of each other currency in it."""
+    currency = doc.get("currency")
+    rates = doc.get("rates", {})
+    if not isinstance(currency, str) or not currency:
+        raise ValueError("`currency` must name the currency totals are in")
+    if not isinstance(rates, dict) or not all(
+        isinstance(k, str) and isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0
+        for k, v in rates.items()
+    ):
+        raise ValueError("`rates` must map currency codes to positive numbers")
+    return currency, {**{k: float(v) for k, v in rates.items()}, currency: 1.0}
+
+
 class Rules:
     def __init__(self, text: str):
         try:
@@ -104,9 +120,13 @@ class Rules:
             raise ValueError(f"invalid yaml: {e}") from None
         if not isinstance(doc, dict) or not isinstance(doc.get("categories"), list):
             raise ValueError("categories.yaml needs a top-level `categories:` list")
-        if not isinstance(doc.get("owner", []), list):
-            raise ValueError("`owner` must be a list of names")
-        owners = [_matcher(str(n))[0] for n in doc.get("owner", [])]
+        if unknown := set(doc) - _TOP_KEYS:
+            raise ValueError(f"unknown top-level key {sorted(unknown)}; known: {sorted(_TOP_KEYS)}")
+        owner = doc.get("owner")
+        if not isinstance(owner, list) or not owner or not all(isinstance(n, str) and n.strip() for n in owner):
+            raise ValueError("`owner` must list your name as banks print it")
+        owners = [_matcher(n)[0] for n in owner]
+        self.currency, self.rates = _money(doc)
         self.categories: list[Category] = []
         self._rules: list[_Rule] = []
         for category, patterns in _flatten(doc["categories"], None, _FLAGS):
@@ -149,7 +169,8 @@ class Rules:
 def text() -> str:
     location = rules_path()
     if not location.exists():
-        raise ValueError(f"no {location}; run `rappen init-db` to start from the example")
+        raise ValueError(f"no {location} yet; write one with set_rules, after the worked example "
+                         f"{EXAMPLE_RULES} (its header gives the format)")
     return location.read_text(encoding="utf-8")
 
 

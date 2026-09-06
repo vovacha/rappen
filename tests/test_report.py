@@ -2,7 +2,7 @@
 
 import pytest
 
-from rappen import service
+from rappen import rules, service
 
 
 @pytest.fixture
@@ -15,7 +15,8 @@ def test_transfers_excluded_by_default(ledger):
     default = ledger.cash_flow()
     included = ledger.cash_flow(include_transfers=True)
     assert included.txn_count > default.txn_count
-    assert included.income_chf != default.income_chf
+    assert included.income != default.income
+    assert default.currency == included.currency == rules.load().currency
     assert default.buckets == []
 
 
@@ -24,14 +25,14 @@ def test_category_buckets_nest_children(ledger):
     assert "Transfers" not in buckets
     assert "Food" in buckets
     assert {c.name for c in buckets["Food"].children} <= {"Groceries", "Restaurants"}
-    assert buckets["Food"].expense_chf == pytest.approx(sum(c.expense_chf for c in buckets["Food"].children), abs=0.02)
+    assert buckets["Food"].expense == pytest.approx(sum(c.expense for c in buckets["Food"].children), abs=0.02)
     assert "Transfers" in {b.name for b in ledger.cash_flow(group_by="category", include_transfers=True).buckets}
 
 
 def test_category_filter_covers_children_in_both_views(ledger):
     groceries = ledger.cash_flow(category="Groceries", currency="CHF")
     assert groceries.txn_count == len(ledger.list_transactions(category="Groceries", limit=1000))
-    assert groceries.income_chf == 0
+    assert groceries.income == 0
     food = ledger.cash_flow(category="Food")
     by_category = {b.name: b for b in ledger.cash_flow(group_by="category").buckets}
     assert food.txn_count == by_category["Food"].txn_count > groceries.txn_count
@@ -118,12 +119,20 @@ def test_clear_then_categorize_rebuilds(ledger):
 
 
 def test_net_worth_is_the_sum_of_the_holdings(ledger):
-    ledger.set_holding("revolut", 1200.5, "all currencies, in CHF")
+    ledger.set_holding("revolut", 1200.5, "all currencies")
     ledger.set_holding("pillar3", 10000)
     ledger.set_holding("loan to Jonas", -250)
-    assert ledger.net_worth().net_worth_chf == 10950.5
+    assert ledger.net_worth().total == 10950.5
     assert ledger.delete_holding("pillar3") == 1 and ledger.delete_holding("pillar3") == 0
-    assert ledger.net_worth().net_worth_chf == 950.5
+    assert ledger.net_worth().total == 950.5
+
+
+def test_cash_flow_names_a_currency_edited_out_of_the_rates(ledger):
+    text = ledger.get_rules().replace("EUR: 0.94, ", "")
+    rules.rules_path().write_text(text, encoding="utf-8")            # by hand, past set_rules
+    with pytest.raises(ValueError, match="EUR"):
+        ledger.cash_flow()
+    assert ledger.list_transactions(limit=1)
 
 
 def test_search_filters_on_description(ledger):
@@ -136,6 +145,8 @@ def test_set_rules_validates_and_fills_blanks(ledger):
     text = ledger.get_rules()
     with pytest.raises(ValueError):
         ledger.set_rules("categories: nope")
+    with pytest.raises(ValueError, match="EUR"):                     # the ledger holds EUR rows
+        ledger.set_rules(text.replace("EUR: 0.94, ", ""))
     assert ledger.get_rules() == text
     migros = ledger.list_transactions(category="Groceries", limit=1000)
     assert migros and ledger.clear_categories("Groceries") == len(migros)

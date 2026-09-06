@@ -3,22 +3,18 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-# Units of CHF per one unit of the currency, for aggregates only; transactions stay native.
-RATES: dict[str, float] = {
-    "CHF": 1.0,
-    "EUR": 0.94,
-    "USD": 0.80,
-    "UAH": 0.019,
-    "CZK": 0.038,
-}
-
-_REPO = Path(__file__).resolve().parents[1]
-EXAMPLE_RULES = _REPO / "categories.example.yaml"
+_PACKAGE = Path(__file__).resolve().parent
+_CHECKOUT = _PACKAGE.parent if (_PACKAGE.parent / "pyproject.toml").exists() else None
+EXAMPLE_RULES = _PACKAGE / "categories.example.yaml"
 
 
 def home() -> Path:
-    """Where the personal data lives (rappen.db, categories.yaml): $RAPPEN_HOME, else the checkout."""
-    return Path(os.environ.get("RAPPEN_HOME") or _REPO)
+    """Where the personal data lives (rappen.db, categories.yaml): $RAPPEN_HOME, else the
+    checkout, else ~/.rappen for an installed package. Created on first use, so there is no
+    setup step."""
+    path = Path(os.environ.get("RAPPEN_HOME") or _CHECKOUT or Path.home() / ".rappen")
+    path.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def database_path() -> Path:

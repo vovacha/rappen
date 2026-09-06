@@ -1,77 +1,57 @@
 # rappen
 
-A small personal-finance tool: bank exports in, one SQLite ledger, answers out. It is built for
-agent harnesses: **MCP** is the interface, and `SKILL.md` is the agent's manual, which also says
-what the tool is for in the owner's words. This file is the developer's.
+Personal finance for you and your AI agent. Export statements from your banks, import them into
+one SQLite ledger, and ask the agent: what did I spend and on what, how does it compare to last
+year, what did the trip cost, how much is left over each month, what am I worth. There is no
+dashboard, and nothing runs in the background: the agent is the interface, over
+[MCP](https://modelcontextprotocol.io), and [SKILL.md](SKILL.md) is its manual. Read it to see
+every question it answers and how.
 
-## What it answers
+## Install
 
-`SKILL.md` tells it in the owner's words, with the calls that answer each: keeping the ledger true,
-spending overview, trend detection, trips, budget tracking, savings, subscriptions, net worth,
-checks, tax return, backup and restore.
+You need [uv](https://docs.astral.sh/uv/) and an agent harness that speaks MCP and loads skills.
+Hand the rest to the agent:
 
-## Sources
+> Clone `https://github.com/vovacha/rappen.git` to `~/rappen` and run `uv sync` in it. Register
+> its MCP server under the name `rappen`, for every project rather than the current directory: stdio, command
+> `uv run --directory <absolute path of ~/rappen> python -m rappen.mcp_server` (the host starts
+> it without a shell, so `~` is not expanded). Install `~/rappen/SKILL.md` as a skill named
+> `rappen`, as a symlink so a `git pull` updates it. Then follow the skill's "First run"
+> workflow to write my `categories.yaml`.
 
-| Bank | Country | Export | What to know |
+Setting up is a conversation: the agent asks for your name as your banks print it and your
+currencies, proposes a category tree and which categories are transfers or trip spend, reads the
+plan back, and writes `categories.yaml` once you agree. Then export a statement from your bank
+and drop it into the chat. The bank is recognised from the file; a currency without a rate is
+refused until you give one, and merchants that keep coming back become rules.
+
+To update, `git pull` in `~/rappen` and run `uv sync` again. The database is brought up to date
+on the next start; a change to the `categories.yaml` format is announced by the tools and is
+yours to make.
+
+## Banks
+
+| Bank | Country | File | Notes |
 |---|---|---|---|
-| PostFinance | Switzerland | account statement, **PDF** | one currency per statement; dates without times |
-| Revolut | Lithuania | transactions export, **CSV** | any mix of currencies; only settled rows are taken, so let exports overlap by a few days |
-| Yuh | Switzerland | transactions export, **CSV** | all currencies in one file; an exchange is two rows; stock and crypto orders are dropped, they belong in holdings |
-| Monobank | Ukraine | statement export with **English column names**, **CSV** | a UAH card; a purchase abroad keeps the merchant's currency and amount, not the bank's UAH conversion |
-| UBS | Switzerland | account transactions export, **CSV** | one currency per account; card payments carry a time, TWINT and e-banking rows do not |
+| PostFinance | Switzerland | PDF | account statement |
+| UBS | Switzerland | CSV | account transactions export |
+| Yuh | Switzerland | CSV | exchanges become two rows; stock and crypto orders are dropped |
+| Revolut | Lithuania | CSV | only settled rows are taken: let exports overlap by a few days |
+| Monobank | Ukraine | CSV | export with English column names |
 
-The bank is recognised from the file itself, so an import is just the path, and the bank's name
-is the account the rows land in. Any bank that exports transactions can be added: each one is a
-folder in `rappen/parsers/`, and this table is the only list of them.
+Any bank that exports transactions can be added: one folder in `rappen/parsers/`, see
+[DEVELOPMENT.md](DEVELOPMENT.md).
 
-## Concepts
+## What to expect
 
-- **Transactions** — signed amounts (`+` in, `−` out) in their native currency; `account` is the
-  bank the file came from. A row is unique by (account, date, amount, currency, description),
-  which makes re-imports idempotent, so descriptions are never edited. Aggregates convert to
-  CHF with the static `RATES` in `config.py`.
-- **Categories** — a two-level taxonomy keyed by name, with the rules that assign it, in your own
-  `categories.yaml` ([RULES.md](RULES.md)). Rules only fill rows that have no category; a stored
-  one is never overwritten, so hand-set categories survive every rules change. Two inherited
-  flags: `trip` (what a trip tags) and `transfer` (money moved, not earned or spent; left out of
-  `cash_flow`).
-- **Trips** — a name on rows, nothing else. `set_trip` tags the trip categories in a date window;
-  pre-paid bookings are attached by hand; trip spend is then a filter.
-- **Holdings and subscriptions** — typed in by hand, never derived from transactions. Net worth
-  is the sum of the holdings.
-
-## Design
-
-Simplicity outranks performance, generality and robustness against events that will not happen
-to one person with a few thousand rows. Nothing is optimized; every mechanism is the smallest one
-that works. Every feature serves a workflow in SKILL.md; code that serves none is a deletion
-candidate.
-
-- **One flat `transactions` table.** Category and trip are names on the row, not foreign keys:
-  no joins, no orphans. The taxonomy is the yaml, read from disk on every call, never cached.
-- **A connection per call.** No pool, no write-ahead log, no server state. The two files in the
-  home directory are the whole state; copy them to back up or move.
-- **No migrations.** The schema is applied idempotently on every connection; a schema change is
-  a one-off fix on one database. So is a parser fix that changes stored descriptions or
-  timestamps: it changes their dedup key, the re-import lists those rows as new, and the old
-  twins are deleted by hand.
-- **Natural keys instead of bookkeeping.** Re-imports are idempotent through a UNIQUE
-  constraint, not an import log. Holdings and subscriptions are typed in, not derived and
-  reconciled.
-- **Static rates, capped lists.** Exchange rates are three constants in `config.py`; mutations
-  list back at most 200 rows instead of paginating.
-- **A rare problem gets a design, not a guard.** Find the design under which it cannot happen,
-  or accept it and write it down. A change that is buggy in several places means the design is
-  wrong, not that it needs more fixes.
-
-## Setup
-
-```bash
-uv run rappen init-db        # creates rappen.db and copies categories.example.yaml -> categories.yaml
-uv run --extra dev pytest    # tests
-```
-
-Both files live in the checkout, gitignored; set `RAPPEN_HOME=/some/dir` to keep them elsewhere
-(run `init-db` there first). They are all the state there is. Put your name and your rules into
-`categories.yaml` (see RULES.md), then register the MCP server, `python -m rappen.mcp_server`
-over stdio, in your harness.
+- **Two files are the whole state**, `rappen.db` and `categories.yaml` in the checkout. Copy
+  them to back up or move.
+- **Re-importing is safe.** A file imported twice adds nothing; a newer export of the same period
+  adds only the rows that were pending in the older one.
+- **You own the categories.** Rules in `categories.yaml` fill in what they match; the rest you set
+  by hand, and a category set by hand is never overwritten ([RULES.md](RULES.md)).
+- **Rows keep their currency; totals are in yours.** The base currency and the rates are
+  numbers you write in `categories.yaml`; nothing is fetched.
+- **Holdings and subscriptions are typed in**, never derived. Net worth is the sum of the
+  holdings.
+- **Nothing is live.** Import at month end, correct the leftovers, then ask.

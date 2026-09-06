@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Callable
 
 from . import parsers, repository, rules
-from .config import RATES
 from .models import ImportResult, ParsedTransaction, Transaction
 
 
@@ -31,11 +30,11 @@ def _transaction(account: str, p: ParsedTransaction, classify: Callable[[str, fl
 
 def import_file(conn: sqlite3.Connection, path: str | Path) -> ImportResult:
     account = _detect_source(path)
-    classify = rules.load().classify
-    rows = [_transaction(account, p, classify) for p in parsers.load()[account].parse(path)]
-    unknown = {t.currency for t in rows} - set(RATES)
+    taxonomy = rules.load()
+    rows = [_transaction(account, p, taxonomy.classify) for p in parsers.load()[account].parse(path)]
+    unknown = {t.currency for t in rows} - set(taxonomy.rates)
     if unknown:
-        raise ValueError(f"{path}: no rate in config.RATES for {sorted(unknown)}; nothing imported")
+        raise ValueError(f"{path}: no rate in categories.yaml for {sorted(unknown)}; nothing imported")
     new = repository.insert_transactions(conn, rows)
     dates = sorted(t.date for t in rows)
     return ImportResult(

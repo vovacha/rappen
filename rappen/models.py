@@ -36,7 +36,7 @@ class Holding:
     id: int
     name: str
     description: str | None
-    value_chf: float             # positive = asset or receivable, negative = debt
+    value: float                 # in the base currency; positive = asset or receivable, negative = debt
     updated_at: str
 
 
@@ -54,26 +54,28 @@ class Subscription:
 
 @dataclass
 class NetWorth:
-    net_worth_chf: float
+    total: float
+    currency: str                # the base currency, from categories.yaml
     holdings: list[Holding]
 
 
 @dataclass
 class Bucket:
     name: str                    # a month '2026-06', an account, a currency, a category, or a trip
-    income_chf: float
-    expense_chf: float
-    net_chf: float
+    income: float
+    expense: float
+    net: float
     txn_count: int
     children: list["Bucket"] = field(default_factory=list)   # sub-categories, for group_by='category'
 
 
 @dataclass
 class CashFlow:
-    income_chf: float
-    expense_chf: float
-    net_chf: float
+    income: float
+    expense: float
+    net: float
     txn_count: int
+    currency: str                # what the totals are in
     buckets: list[Bucket]
 
 

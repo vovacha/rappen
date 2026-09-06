@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from . import config, db, service
+from . import service
 
 
 def _print(value: Any) -> None:
@@ -26,8 +25,6 @@ def _print(value: Any) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="rappen", description="Personal finance ledger.")
     sub = parser.add_subparsers(dest="command", required=True)
-
-    sub.add_parser("init-db", help="Create the home directory, the database and a categories.yaml from the example.")
 
     p = sub.add_parser("import", help="Import a statement file; the account is auto-detected.")
     p.add_argument("file")
@@ -49,7 +46,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("ids", type=int, nargs="+")
     p.add_argument("--category")
 
-    p = sub.add_parser("cash-flow", help="Income/expense/net in CHF, optionally bucketed.")
+    p = sub.add_parser("cash-flow", help="Income/expense/net in the base currency, optionally bucketed.")
     p.add_argument("--from", dest="date_from")
     p.add_argument("--to", dest="date_to")
     p.add_argument("--group-by", choices=["month", "account", "currency", "category", "trip"])
@@ -79,11 +76,11 @@ def build_parser() -> argparse.ArgumentParser:
     a = rs.add_parser("set", help="Validate FILE, install it as categories.yaml, fill uncategorized rows.")
     a.add_argument("file")
 
-    sub.add_parser("net-worth", help="Net worth in CHF: the sum of the holdings, and the holdings.")
+    sub.add_parser("net-worth", help="Net worth in the base currency: the sum of the holdings, and the holdings.")
     p = sub.add_parser("holdings", help="Maintain the holdings by hand.")
     hs = p.add_subparsers(dest="action", required=True)
     a = hs.add_parser("set", help="Create or update a holding by name.")
-    a.add_argument("name"); a.add_argument("value_chf", type=float); a.add_argument("--description")
+    a.add_argument("name"); a.add_argument("value", type=float, help="In the base currency."); a.add_argument("--description")
     a = hs.add_parser("delete"); a.add_argument("name")
 
     p = sub.add_parser("subscriptions", help="Manage the manual subscription registry.")
@@ -95,7 +92,7 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("amount", type=float)
     a.add_argument("cadence", choices=["monthly", "yearly"])
     a.add_argument("payment", choices=["apple_store", "paypal", "card"])
-    a.add_argument("--currency", default="CHF")
+    a.add_argument("--currency", help="Defaults to the base currency.")
     a.add_argument("--inactive", action="store_true", help="Mark as cancelled/paused.")
     a.add_argument("--notes")
     a = ss.add_parser("delete"); a.add_argument("name")
@@ -105,14 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
 
-    if args.command == "init-db":
-        config.home().mkdir(parents=True, exist_ok=True)
-        if not config.rules_path().exists():
-            shutil.copy(config.EXAMPLE_RULES, config.rules_path())
-        with db.session():
-            pass
-        _print({"database": str(config.database_path()), "rules": str(config.rules_path())})
-    elif args.command == "import":
+    if args.command == "import":
         _print(service.import_file(args.file))
     elif args.command == "transactions":
         _print(service.list_transactions(
@@ -146,7 +136,7 @@ def main(argv: list[str] | None = None) -> None:
         _print(service.net_worth())
     elif args.command == "holdings":
         if args.action == "set":
-            _print(service.set_holding(args.name, args.value_chf, args.description))
+            _print(service.set_holding(args.name, args.value, args.description))
         else:
             _print({"deleted": service.delete_holding(args.name)})
     elif args.command == "subscriptions":
