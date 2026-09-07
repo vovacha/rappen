@@ -14,14 +14,14 @@ Paste this to an agent that speaks MCP and loads skills:
 ```
 Install rappen from https://github.com/vovacha/rappen:
 
-1. Clone it.
+1. Clone it and run `uv sync` in the clone.
 2. Register its MCP server for all projects:
      name:      rappen
      transport: stdio
      command:   uv run --directory <absolute path of the clone> python -m rappen.mcp_server
 3. Symlink its SKILL.md as a skill named `rappen`.
-4. If the rappen tools are in this session, follow the skill's "First run"; if they need a new
-   session, say so.
+4. Reload MCP servers, then call `get_config`: "no config.yaml yet" means it works. Only then
+   follow the skill's "First run".
 ```
 
 Setting up is a conversation: the agent asks for your currencies, proposes a small category

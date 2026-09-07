@@ -3,7 +3,7 @@ name: rappen
 description: "Use when the user asks about personal finances tracked in Rappen: spending, trends, trips, savings, budget, net worth and holdings, subscriptions, checks on single charges, tax figures, statement imports, categories and rules, or the database file. Query and maintain the ledger only through Rappen MCP tools."
 license: MIT
 metadata:
-  version: 10.0.0
+  version: 11.0.0
   tags: [personal-finance, rappen, mcp, transactions, cash-flow, trips, net-worth, subscriptions]
 ---
 
@@ -19,6 +19,8 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 **First run**
 
+- *The skill is loaded but no rappen tool can be called.*
+  Say so, name how this host reloads its MCP servers or restarts, and stop: nothing in this skill runs without the tools, and a new chat alone may not connect them.
 - *There is no config.yaml yet: every tool says so.*
   One conversation, in this order. Every step is a proposal the user approves or changes; only the currencies are asked outright. Nothing is written before step 5.
   1. **Currencies.** Ask what totals are in (`currency`) and which other currencies their accounts might hold, nothing about country or banks. Propose a rate for each, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
@@ -148,7 +150,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 ## Rules
 
-1. The ledger is read and changed through the Rappen MCP tools only: never SQL, the files behind them, or a client script around them. The exception is Backup and restore above.
+1. The ledger is read and changed through the Rappen MCP tools only: never SQL, the files behind them, or a client script around them. Tools that are not callable are reported, not replaced. The exception is Backup and restore above.
 2. Totals come from `cash_flow`. `list_transactions` is capped and for looking at rows.
 3. Categories are the user's: use the names `list_categories` returns, and change stored categories only when asked or where a workflow above says so.
 4. Transfer categories are left out of `cash_flow` unless `include_transfers=true`; a total over them is both legs of every move.
