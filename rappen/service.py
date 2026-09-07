@@ -8,7 +8,7 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
-from . import db, importer, repository, rules
+from . import config, db, importer, repository
 from .models import (
     Bucket, CashFlow, Category, Holding, ImportResult, NetWorth, Subscription, Transaction,
 )
@@ -29,7 +29,7 @@ def import_file(path: str | Path) -> ImportResult:
 
 
 def list_transactions(*, category: str | None = None, **filters) -> list[Transaction]:
-    categories = rules.load().family(category) if category is not None else None
+    categories = config.load().family(category) if category is not None else None
     with db.session() as conn:
         return repository.list_transactions(conn, categories=categories, **filters)
 
@@ -42,17 +42,17 @@ def cash_flow(
     (month, account, currency, category, trip). Category buckets are top-level parents with
     their children nested; trip buckets are only trips. Transfer categories are excluded
     unless `include_transfers`."""
-    taxonomy = rules.load()
-    excluded = [] if include_transfers else taxonomy.names(transfer=True)
-    categories = taxonomy.family(category) if category is not None else None
+    cfg = config.load()
+    excluded = [] if include_transfers else cfg.names(transfer=True)
+    categories = cfg.family(category) if category is not None else None
     if group_by == "trip" and trip is None:
         trip = "*"
     with db.session() as conn:
         rows = repository.totals(conn, group_by=group_by, excluded=excluded, categories=categories,
                                  trip=trip, **filters)
-    unrated = {r["currency"] for r in rows} - set(taxonomy.rates)
+    unrated = {r["currency"] for r in rows} - set(cfg.rates)
     if unrated:
-        raise ValueError(f"no rate in categories.yaml for {sorted(unrated)}, which the ledger holds rows in")
+        raise ValueError(f"no rate in config.yaml for {sorted(unrated)}, which the ledger holds rows in")
 
     def label(key: object) -> str:
         return key or "uncategorized" if group_by == "category" else str(key)
@@ -61,11 +61,11 @@ def cash_flow(
     children: dict[object, dict[object, list[float]]] = defaultdict(lambda: defaultdict(lambda: [0.0, 0.0, 0]))
     total = [0.0, 0.0, 0]
     for r in rows:
-        rate = taxonomy.rates[r["currency"]]
+        rate = cfg.rates[r["currency"]]
         add = (r["income"] * rate, r["expense"] * rate, r["txn_count"])
         key = r["bucket"]
         if group_by == "category" and key:
-            top = taxonomy.top_level(key)
+            top = cfg.top_level(key)
             if top != key:
                 _accumulate(children[top][key], add)
             key = top
@@ -79,7 +79,7 @@ def cash_flow(
     buckets.sort(key=lambda b: (-b.expense, b.name) if group_by in ("category", "trip") else b.name)
     if group_by is None:
         buckets = []
-    return CashFlow(*_money(total), currency=taxonomy.currency, buckets=buckets)
+    return CashFlow(*_money(total), currency=cfg.currency, buckets=buckets)
 
 
 def _accumulate(acc: list, add: tuple) -> None:
@@ -97,10 +97,10 @@ def _bucket(name: str, acc: list, children: list[Bucket] | None = None) -> Bucke
 
 
 def categorize() -> dict:
-    """Assign categories.yaml rules to every uncategorized transaction; never overwrites a
+    """Assign the config.yaml rules to every uncategorized transaction; never overwrites a
     stored category. Clear first (clear_categories) to redo one."""
-    taxonomy = rules.load()
-    classify = taxonomy.classify
+    cfg = config.load()
+    classify = cfg.classify
     with db.session() as conn:
         pending = repository.list_transactions(conn, uncategorized=True, limit=None)
         buckets: dict[str, list[int]] = defaultdict(list)
@@ -116,23 +116,23 @@ def categorize() -> dict:
         "categorized_now": categorized,
         "uncategorized": uncategorized,
         "coverage_pct": round(100 * (total - uncategorized) / total, 1) if total else 0.0,
-        "unknown_categories": sorted(set(stored) - set(taxonomy.names())),   # stored, but not in the yaml
+        "unknown_categories": sorted(set(stored) - set(cfg.names())),   # stored, but not in the yaml
     }
 
 
-def get_rules() -> str:
-    return rules.text()
+def get_config() -> str:
+    return config.text()
 
 
-def set_rules(text: str) -> dict:
-    """Replace categories.yaml (validated first, and against the currencies the ledger holds)
+def set_config(text: str) -> dict:
+    """Replace config.yaml (validated first, and against the currencies the ledger holds)
     and fill uncategorized rows with the new rules. Stored categories are never overwritten."""
-    compiled = rules.Rules(text)
+    compiled = config.Config(text)
     with db.session() as conn:
         unrated = set(repository.stored_currencies(conn)) - set(compiled.rates)
     if unrated:
         raise ValueError(f"no rate for {sorted(unrated)}, which the ledger holds rows in; nothing changed")
-    rules.save(text)
+    config.save(text)
     return {"categories": len(compiled.categories), **categorize()}
 
 
@@ -142,21 +142,21 @@ def clear_categories(category: str | None = None) -> int:
 
 
 def set_category(ids: list[int], category: str | None = None) -> int:
-    if category is not None and category not in rules.load().names():
+    if category is not None and category not in config.load().names():
         raise ValueError(f"unknown category {category!r}")
     with db.session() as conn:
         return repository.set_category(conn, ids, category)
 
 
 def list_categories() -> list[Category]:
-    return rules.load().categories
+    return config.load().categories
 
 
 def set_trip(name: str, date_from: str, date_to: str) -> dict:
     """Tag the untagged rows of trip categories in the window, then list every row in the
     window so the caller sees what was tagged and what was not. Refuses while the window has
     uncategorized rows: they must be categorized first, then the tagging is right by construction."""
-    trip_categories = rules.load().names(trip=True)
+    trip_categories = config.load().names(trip=True)
     with db.session() as conn:
         window = dict(date_from=date_from, date_to=date_to, limit=None)
         pending = repository.list_transactions(conn, uncategorized=True, **window)
@@ -185,7 +185,7 @@ def net_worth() -> NetWorth:
     """The sum of the hand-maintained holdings; nothing is derived from transactions."""
     with db.session() as conn:
         holdings = repository.list_holdings(conn)
-    return NetWorth(total=round(sum(h.value for h in holdings), 2), currency=rules.load().currency, holdings=holdings)
+    return NetWorth(total=round(sum(h.value for h in holdings), 2), currency=config.load().currency, holdings=holdings)
 
 
 def set_holding(name: str, value: float, description: str | None = None) -> Holding:
@@ -215,7 +215,7 @@ def set_subscription(
     """`currency` defaults to the base currency."""
     with db.session() as conn:
         return repository.set_subscription(
-            conn, name, amount, currency or rules.load().currency, cadence, payment, active, notes
+            conn, name, amount, currency or config.load().currency, cadence, payment, active, notes
         )
 
 

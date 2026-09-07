@@ -7,5 +7,5 @@ __pycache__/
 *.db.bak-*
 /*.csv
 /*.pdf
-/categories.yaml*
+/config.yaml*
 .pytest_cache/

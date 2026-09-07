@@ -95,26 +95,26 @@ def list_categories() -> list[dict]:
 
 @mcp.tool()
 def categorize() -> dict:
-    """Assign categories.yaml rules to every uncategorized transaction (never overwrites a
+    """Assign the config.yaml rules to every uncategorized transaction (never overwrites a
     stored category). Returns coverage stats and `unknown_categories`: names stored on rows
-    that the yaml no longer has. Imports and set_rules already do this; run it after
+    that the yaml no longer has. Imports and set_config already do this; run it after
     clear_categories."""
     return service.categorize()
 
 
 @mcp.tool()
-def get_rules() -> str:
-    """The current categories.yaml (taxonomy + rules) as text."""
-    return service.get_rules()
+def get_config() -> str:
+    """The current config.yaml (owner, currency and rates, the category taxonomy and its rules) as text."""
+    return service.get_config()
 
 
 @mcp.tool()
-def set_rules(text: str) -> dict:
-    """Replace categories.yaml with `text` (the whole file the user sent). It is validated
+def set_config(text: str) -> dict:
+    """Replace config.yaml with `text` (the whole file the user sent). It is validated
     first; a broken file is rejected and the old one kept. The new rules then fill every
     uncategorized row; stored categories are never overwritten. Returns the category count and
     coverage stats."""
-    return service.set_rules(text)
+    return service.set_config(text)
 
 
 @mcp.tool()

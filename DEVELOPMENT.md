@@ -4,10 +4,6 @@
 uv run --extra dev pytest
 ```
 
-`RAPPEN_HOME=/some/dir` keeps `rappen.db` and `categories.yaml` outside the checkout; the
-directory and the database are created on first use. An installed wheel has no checkout and
-uses `~/.rappen`.
-
 ## Adding a bank
 
 A bank is a package in `rappen/parsers/`, discovered by name; the package name is the account
@@ -16,7 +12,7 @@ fingerprint (the first 64 bytes of a CSV, the first page's text of a PDF),
 `parse(path) -> list[ParsedTransaction]`, a `test_parser.py`, and an anonymised
 `statement.csv` or `statement.pdf`. Rows are signed amounts in their native currency with an
 ISO timestamp; a source that prints no times goes through `stamp`, which gives identical rows
-on one day successive seconds. A new currency needs a rate in `categories.example.yaml`, which
+on one day successive seconds. A new currency needs a rate in `config.example.yaml`, which
 the tests run with. The shared importer test then covers detection and idempotent re-import for
 free.
 
@@ -37,11 +33,16 @@ candidate.
   them. A parser fix that changes stored descriptions or timestamps is not a migration: it
   changes their dedup key, the re-import lists those rows as new, and the old twins are deleted
   by hand.
+- **The config is versioned, the agent migrates it.** `config.yaml` carries `version`, 1 plus
+  the length of `CHANGES` in `config.py`. A change to the format appends one sentence saying
+  what to edit; an older file is rejected with the sentences since its version, and the agent
+  makes the edits and calls `set_config`. Nothing rewrites the yaml. The two file names and
+  `~/.rappen` are the one thing no update moves.
 - **Natural keys instead of bookkeeping.** A row is unique by (account, date, amount, currency,
   description), so re-imports are idempotent through a UNIQUE constraint, not an import log,
   and descriptions are never edited. Holdings and subscriptions are typed in, not derived and
   reconciled.
-- **Static rates, capped lists.** Exchange rates are numbers typed into `categories.yaml`, never
+- **Static rates, capped lists.** Exchange rates are numbers typed into `config.yaml`, never
   fetched; mutations list back at most 200 rows instead of paginating.
 - **A rare problem gets a design, not a guard.** Find the design under which it cannot happen,
   or accept it and write it down. A change that is buggy in several places means the design is

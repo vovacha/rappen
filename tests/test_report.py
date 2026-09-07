@@ -2,7 +2,7 @@
 
 import pytest
 
-from rappen import rules, service
+from rappen import config, service
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def test_transfers_excluded_by_default(ledger):
     included = ledger.cash_flow(include_transfers=True)
     assert included.txn_count > default.txn_count
     assert included.income != default.income
-    assert default.currency == included.currency == rules.load().currency
+    assert default.currency == included.currency == config.load().currency
     assert default.buckets == []
 
 
@@ -51,8 +51,8 @@ def test_unknown_category_is_rejected(ledger):
 
 def test_categorize_names_stored_categories_the_yaml_lost(ledger):
     assert ledger.categorize()["unknown_categories"] == []
-    renamed = ledger.get_rules().replace("- name: Groceries\n", "- name: Bread\n")
-    assert ledger.set_rules(renamed)["unknown_categories"] == ["Groceries"]
+    renamed = ledger.get_config().replace("- name: Groceries\n", "- name: Bread\n")
+    assert ledger.set_config(renamed)["unknown_categories"] == ["Groceries"]
 
 
 def test_dates_must_be_whole_days(ledger):
@@ -128,8 +128,8 @@ def test_net_worth_is_the_sum_of_the_holdings(ledger):
 
 
 def test_cash_flow_names_a_currency_edited_out_of_the_rates(ledger):
-    text = ledger.get_rules().replace("EUR: 0.94, ", "")
-    rules.rules_path().write_text(text, encoding="utf-8")            # by hand, past set_rules
+    text = ledger.get_config().replace("EUR: 0.94, ", "")
+    config.path().write_text(text, encoding="utf-8")                # by hand, past set_config
     with pytest.raises(ValueError, match="EUR"):
         ledger.cash_flow()
     assert ledger.list_transactions(limit=1)
@@ -141,17 +141,17 @@ def test_search_filters_on_description(ledger):
     assert ledger.list_transactions(search="migros", date_from="2026-06-01") == [r for r in rows if r.date >= "2026-06"]
 
 
-def test_set_rules_validates_and_fills_blanks(ledger):
-    text = ledger.get_rules()
+def test_set_config_validates_and_fills_blanks(ledger):
+    text = ledger.get_config()
     with pytest.raises(ValueError):
-        ledger.set_rules("categories: nope")
+        ledger.set_config("categories: nope")
     with pytest.raises(ValueError, match="EUR"):                     # the ledger holds EUR rows
-        ledger.set_rules(text.replace("EUR: 0.94, ", ""))
-    assert ledger.get_rules() == text
+        ledger.set_config(text.replace("EUR: 0.94, ", ""))
+    assert ledger.get_config() == text
     migros = ledger.list_transactions(category="Groceries", limit=1000)
     assert migros and ledger.clear_categories("Groceries") == len(migros)
     moved = text.replace("          - MIGROS\n", "").replace("- name: Restaurants\n        match:\n", "- name: Restaurants\n        match:\n          - MIGROS\n")
-    result = ledger.set_rules(moved)
+    result = ledger.set_config(moved)
     assert result["categorized_now"] == len(migros)                  # filled the blanks, nothing else
     now = {t.id: t.category for t in ledger.list_transactions(limit=1000)}
     assert {now[m.id] for m in migros if "Migros" in m.description} == {"Restaurants"}

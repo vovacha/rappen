@@ -55,7 +55,7 @@ class Subscription:
 @dataclass
 class NetWorth:
     total: float
-    currency: str                # the base currency, from categories.yaml
+    currency: str                # the base currency, from config.yaml
     holdings: list[Holding]
 
 

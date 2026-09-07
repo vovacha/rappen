@@ -66,14 +66,14 @@ def build_parser() -> argparse.ArgumentParser:
     a = ts.add_parser("delete", help="Untag every row of the trip."); a.add_argument("name")
 
     sub.add_parser("categories", help="List the category taxonomy.")
-    sub.add_parser("categorize", help="Apply categories.yaml rules to uncategorized rows.")
+    sub.add_parser("categorize", help="Apply the config.yaml rules to uncategorized rows.")
     p = sub.add_parser("clear-categories", help="Uncategorize one category (or all rows); pair with categorize.")
     p.add_argument("--category")
 
-    p = sub.add_parser("rules", help="Show or replace categories.yaml.")
+    p = sub.add_parser("config", help="Show or replace config.yaml.")
     rs = p.add_subparsers(dest="action", required=True)
     rs.add_parser("get")
-    a = rs.add_parser("set", help="Validate FILE, install it as categories.yaml, fill uncategorized rows.")
+    a = rs.add_parser("set", help="Validate FILE, install it as config.yaml, fill uncategorized rows.")
     a.add_argument("file")
 
     sub.add_parser("net-worth", help="Net worth in the base currency: the sum of the holdings, and the holdings.")
@@ -127,11 +127,11 @@ def main(argv: list[str] | None = None) -> None:
         _print(service.categorize())
     elif args.command == "clear-categories":
         _print({"cleared": service.clear_categories(args.category)})
-    elif args.command == "rules":
+    elif args.command == "config":
         if args.action == "get":
-            print(service.get_rules(), end="")
+            print(service.get_config(), end="")
         else:
-            _print(service.set_rules(Path(args.file).read_text(encoding="utf-8")))
+            _print(service.set_config(Path(args.file).read_text(encoding="utf-8")))
     elif args.command == "net-worth":
         _print(service.net_worth())
     elif args.command == "holdings":

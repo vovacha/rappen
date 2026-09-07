@@ -1,8 +1,8 @@
 import pytest
 
-from rappen import rules
+from rappen import config
 
-HEAD = "owner: [MUSTER]\ncurrency: CHF\n"
+HEAD = "version: 1\nowner: [MUSTER]\ncurrency: CHF\n"
 
 CASES = [
     ("Migros", -20, "Groceries"),
@@ -54,7 +54,7 @@ CASES = [
 
 @pytest.mark.parametrize("desc, amount, expected", CASES)
 def test_classify(desc, amount, expected):
-    assert rules.load().classify(desc, amount) == expected
+    assert config.load().classify(desc, amount) == expected
 
 
 @pytest.mark.parametrize("desc, expected", [
@@ -63,7 +63,7 @@ def test_classify(desc, amount, expected):
     ("КИЇВСТАРТ", None),
 ])
 def test_cyrillic_patterns(desc, expected):
-    cyrillic = rules.Rules(HEAD + "categories:\n  - name: Telecom\n    match: [КИЇВСТАР]\n")
+    cyrillic = config.Config(HEAD + "categories:\n  - name: Telecom\n    match: [КИЇВСТАР]\n")
     assert cyrillic.classify(desc, -150) == expected
 
 
@@ -79,13 +79,16 @@ BAD_CATEGORIES = [
     "categories:\n  - name: Food\n    match: ['*']\n",                                # matches everything
 ]
 BAD_HEADS = [
-    "categories: []\n",                                                  # neither owner nor currency
-    "currency: CHF\ncategories: []\n",                                   # no owner: the placeholder must not pass
-    "owner: [MUSTER]\ncategories: []\n",                                 # no base currency
-    "owner: MUSTER\ncurrency: CHF\ncategories: []\n",
-    "owner: []\ncurrency: CHF\ncategories: []\n",
-    "owner: [MUSTER]\ncurrency: 5\ncategories: []\n",
-    "owner: [MUSTER]\ncurrency: CHF\nowners: [MAX]\ncategories: []\n",  # a top-level typo would silently drop the key
+    "owner: [MUSTER]\ncurrency: CHF\ncategories: []\n",                  # no version: an unversioned file is not trusted
+    "version: 0\nowner: [MUSTER]\ncurrency: CHF\ncategories: []\n",
+    "version: 2\nowner: [MUSTER]\ncurrency: CHF\ncategories: []\n",     # from a newer rappen
+    "version: 1\ncategories: []\n",                                      # neither owner nor currency
+    "version: 1\ncurrency: CHF\ncategories: []\n",                       # no owner: the placeholder must not pass
+    "version: 1\nowner: [MUSTER]\ncategories: []\n",                     # no base currency
+    "version: 1\nowner: MUSTER\ncurrency: CHF\ncategories: []\n",
+    "version: 1\nowner: []\ncurrency: CHF\ncategories: []\n",
+    "version: 1\nowner: [MUSTER]\ncurrency: 5\ncategories: []\n",
+    HEAD + "owners: [MAX]\ncategories: []\n",                            # a top-level typo would silently drop the key
     HEAD + "rates: [0.94]\ncategories: []\n",
     HEAD + "rates: {EUR: -0.94}\ncategories: []\n",
     HEAD + "rates: {EUR: true}\ncategories: []\n",
@@ -95,17 +98,28 @@ BAD_HEADS = [
 @pytest.mark.parametrize("bad", [HEAD + b for b in BAD_CATEGORIES] + BAD_HEADS)
 def test_malformed_files_are_rejected(bad):
     with pytest.raises(ValueError):
-        rules.Rules(bad)
+        config.Config(bad)
 
 
 def test_base_currency_has_rate_one():
-    money = rules.Rules("owner: [MUSTER]\ncurrency: EUR\nrates: {USD: 0.9}\ncategories: []\n")
+    money = config.Config("version: 1\nowner: [MUSTER]\ncurrency: EUR\nrates: {USD: 0.9}\ncategories: []\n")
     assert (money.currency, money.rates) == ("EUR", {"USD": 0.9, "EUR": 1.0})
 
 
-def test_first_set_rules_needs_no_file_or_directory(home, monkeypatch):
+def test_an_older_format_is_rejected_with_what_to_edit(monkeypatch):
+    """The real list is empty until the format changes; the example file is always current."""
+    monkeypatch.setattr(config, "CHANGES", ["`rates` are inverted", "`owner` is a string"])
+    with pytest.raises(ValueError, match=r"(?s)format 1; .*format 3.*2: `rates`.*3: `owner`"):
+        config.load()
+    with pytest.raises(ValueError, match=r"(?s)format 2; .*format 3.*3: `owner`") as e:
+        config.Config(HEAD.replace("version: 1", "version: 2") + "categories: []\n")
+    assert "rates" not in str(e.value)
+    config.Config(HEAD.replace("version: 1", "version: 3") + "categories: []\n")
+
+
+def test_first_set_config_needs_no_file_or_directory(home, monkeypatch):
     monkeypatch.setenv("RAPPEN_HOME", str(home / "fresh"))
-    with pytest.raises(ValueError, match="set_rules"):
-        rules.text()
-    saved = rules.save((home / "categories.yaml").read_text(encoding="utf-8"))
-    assert rules.load().names() == saved.names()
+    with pytest.raises(ValueError, match="set_config"):
+        config.text()
+    saved = config.save((home / "config.yaml").read_text(encoding="utf-8"))
+    assert config.load().names() == saved.names()

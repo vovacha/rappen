@@ -1,5 +1,6 @@
-# Example categories.yaml: the taxonomy and the rules that assign it (format in RULES.md).
-# Your own categories.yaml is written with set_rules; this one is the template and the tests' fixture.
+# Example config.yaml: owner, base currency and rates, and the category taxonomy with the rules
+# that assign it (format in CONFIG.md). Your own is written with set_config; this one is the
+# template and the tests' fixture.
 # A node has: name, optional children, optional match patterns, and two flags that children
 # inherit, both false by default:
 #   trip: true       counts as trip spend; set_trip tags it inside a trip's window
@@ -13,6 +14,7 @@
 # The longest match wins; a tie between categories, or no match, leaves the row for manual review.
 # A rule earns its place by matching repeatedly; one-off merchants are categorized by hand.
 
+version: 1                   # the file format; an update that changes it says what to edit
 owner: [MUSTER, MAX]      # your name as banks print it
 currency: CHF                # what totals are in
 rates: { EUR: 0.94, USD: 0.80, UAH: 0.019, CZK: 0.038 }   # one unit of each other currency in it; totals only, rows stay native

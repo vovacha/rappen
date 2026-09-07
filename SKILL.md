@@ -3,7 +3,7 @@ name: rappen
 description: "Use when the user asks about personal finances tracked in Rappen: spending, trends, trips, savings, budget, net worth and holdings, subscriptions, checks on single charges, tax figures, statement imports, categories and rules, or the database file. Query and maintain the ledger only through Rappen MCP tools."
 license: MIT
 metadata:
-  version: 8.0.0
+  version: 9.0.0
   tags: [personal-finance, rappen, mcp, transactions, cash-flow, trips, net-worth, subscriptions]
 ---
 
@@ -11,7 +11,7 @@ metadata:
 
 ## Overview
 
-Rappen is a personal ledger. You export the statements from your banks and import them; every transaction gets a category from rules you write yourself in `categories.yaml`, what the rules miss you set by hand, and a category set by hand is never overwritten by a rule. Then you ask: what did I spend and on what, how does it compare to last year, what did the trip cost, how much is left over each month. Money moved between your own accounts is a transfer and stays out of those totals. What you own and what you pay for regularly you type in yourself: the holdings add up to your net worth, the subscriptions are a list. Rows keep their own currency; totals are in one base currency, set in `categories.yaml` and named in every total. There are no budgets.
+Rappen is a personal ledger. You export the statements from your banks and import them; every transaction gets a category from rules you write yourself in `config.yaml`, what the rules miss you set by hand, and a category set by hand is never overwritten by a rule. Then you ask: what did I spend and on what, how does it compare to last year, what did the trip cost, how much is left over each month. Money moved between your own accounts is a transfer and stays out of those totals. What you own and what you pay for regularly you type in yourself: the holdings add up to your net worth, the subscriptions are a list. Rows keep their own currency; totals are in one base currency, set in `config.yaml` and named in every total. There are no budgets.
 
 ## Workflows
 
@@ -19,16 +19,18 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 **First run**
 
-- *There is no categories.yaml yet: every tool says so and names the example.*
+- *There is no config.yaml yet: every tool says so and names the example.*
   One conversation, in this order. Every step is a proposal the user approves or changes; only the name is asked outright. Nothing is written before step 6.
   1. **Name.** Ask for it exactly as their banks print it (`owner`), often surname and given name in capitals and in either order; both go in the list.
   2. **Currencies.** Ask where they live and which banks they use, then propose the base currency (`currency`) and the other currencies those banks are likely to hold, each with a rate from what you know, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
-  3. **Categories.** Propose a two-level tree after `categories.example.yaml`, fitted to what you know so far: rent or own, car, pets, children, pension contributions, investments. Merchants are not proposed; rules come from the first imports.
+  3. **Categories.** Propose a two-level tree after `config.example.yaml`, fitted to what you know so far: rent or own, car, pets, children, pension contributions, investments. Merchants are not proposed; rules come from the first imports.
   4. **Transfers.** Propose which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
   5. **Trip spend.** Propose which count as trip spend when a trip's window is tagged: food, transport, accommodation, shopping, entertainment, and not rent, insurance, subscriptions. `trip: true`.
-  6. **Plan.** Read it all back in one message: owner, currency and rates, the tree with its flags. On agreement write the yaml, keeping the example's Transfers patterns (they are the supported banks' own strings) and none of its merchants, owner or rates, then `set_rules(text)` and say the ledger is ready for its first statement.
+  6. **Plan.** Read it all back in one message: owner, currency and rates, the tree with its flags. On agreement write the yaml, keeping the example's Transfers patterns (they are the supported banks' own strings) and none of its merchants, owner or rates, then `set_config(text)` and say the ledger is ready for its first statement.
 - *An import is refused: no rate for a currency.*
-  Propose one, have it confirmed, add it under `rates` via `get_rules` / `set_rules`, import again.
+  Propose one, have it confirmed, add it under `rates` via `get_config` / `set_config`, import again.
+- *A tool says config.yaml is an older format, and lists what to edit.*
+  `get_config`, make exactly the listed edits, set `version` to the number named, `set_config`. Nothing else changes.
 
 **Keeping the ledger true**
 
@@ -39,13 +41,13 @@ What the user says, and how to answer it. Category names are the example yaml's;
 - *I categorize the leftovers by hand.*
   `list_transactions(uncategorized=true, date_from, date_to)`, then `set_category(ids, name)` once per category.
 - *A merchant keeps coming back and I set it by hand every time.*
-  `get_rules`, add the pattern under its category, `set_rules(text)`. Never a rule for a one-off.
+  `get_config`, add the pattern under its category, `set_config(text)`. Never a rule for a one-off.
 - *I want a new category, or to rename or split one.*
-  `get_rules`, edit the taxonomy, `set_rules`. Rows keep the old name until `clear_categories(old_name)` and `categorize`.
+  `get_config`, edit the taxonomy, `set_config`. Rows keep the old name until `clear_categories(old_name)` and `categorize`.
 - *A rule was wrong.*
-  Fix it via `get_rules` and `set_rules`, then `clear_categories(name)` and `categorize`. `clear_categories()` without a name loses every hand-set category: only on explicit request.
-- *I want to edit categories.yaml myself.*
-  `get_rules`, send it as a file; `set_rules` with the full text when it comes back.
+  Fix it via `get_config` and `set_config`, then `clear_categories(name)` and `categorize`. `clear_categories()` without a name loses every hand-set category: only on explicit request.
+- *I want to edit config.yaml myself.*
+  `get_config`, send it as a file; `set_config` with the full text when it comes back.
 
 **Spending overview**
 
@@ -84,7 +86,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 - *A ski season is several weekends.*
   `set_trip` once per weekend, same name.
 - *This category should count as trip spend.*
-  `trip: true` on it via `get_rules` / `set_rules`, then `set_trip` again with the same name and dates.
+  `trip: true` on it via `get_config` / `set_config`, then `set_trip` again with the same name and dates.
 - *I got a trip's name or dates wrong.*
   `delete_trip(name)` untags every row, hand-attached ones included; then `set_trip` again and re-attach the pre-paid rows.
 
@@ -139,7 +141,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 **Backup and restore**
 
 - *Send me the database. Send me the rules.*
-  `rappen.db` / `categories.yaml` from the Rappen home directory (the checkout, or `RAPPEN_HOME`), as-is.
+  `rappen.db` / `config.yaml` from `~/.rappen` (or `RAPPEN_HOME`, when set), as-is.
 - *Here is a rappen.db, use this one.*
   Copy the current one to `rappen.db.bak-<YYYY-MM-DD>`, move the new one into place; no restart needed. Confirm with a `cash_flow` for the current month.
 

@@ -10,9 +10,9 @@ STATEMENTS = {name: next(Path(bank.__file__).parent.glob("statement.*")) for nam
 
 @pytest.fixture(autouse=True)
 def home(tmp_path, monkeypatch):
-    """A fresh home per test with the example rules; the DB is created on first use."""
+    """A fresh home per test with the example config; the DB is created on first use."""
     monkeypatch.setenv("RAPPEN_HOME", str(tmp_path))
-    shutil.copy(config.EXAMPLE_RULES, tmp_path / "categories.yaml")
+    shutil.copy(config.EXAMPLE, tmp_path / "config.yaml")
     return tmp_path
 
 
