@@ -23,7 +23,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
   Name the host's MCP reload command and stop; nothing here runs without the tools.
 - *Set up rappen, or a tool says there is no config.yaml yet.*
   One conversation, in this order, and only the questions: no tool names, step names, or what has or has not been written. Every step is a proposal the user approves or changes; only the currencies are asked outright. Nothing is written before step 5.
-  1. **Currencies.** Ask which currency they want their money reported in (`currency`) and which others their accounts hold, nothing about country or banks. Propose a rate for each, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
+  1. **Currencies.** One question, word for word: "What should be your main currency, and which other currencies do you use?" (`currency`). Nothing about country, banks or rates. Rates are never asked for: from the answer, propose one for each other currency yourself, one unit of it in the base currency, and say they are typed in and never fetched, so they update them when the numbers drift.
   2. **Categories.** Propose a small two-level tree in the example's names, fitted to what you know of the user, and say what you fitted. Merchants are not proposed; rules come from the first imports.
   3. **Transfers.** Propose which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
   4. **Trip spend.** Propose which count as trip spend when a trip's window is tagged: food, transport, accommodation, shopping, entertainment, and not rent, insurance, subscriptions. `trip: true`.
