@@ -15,7 +15,7 @@
 # A rule earns its place by matching repeatedly; one-off merchants are categorized by hand.
 
 version: 1                   # the file format; an update that changes it says what to edit
-owner: [MUSTER, MAX]      # your name as banks print it
+owner: [MAX MUSTER]          # optional: your name as a bank prints it, for owner_mention
 currency: CHF                # what totals are in
 rates: { EUR: 0.94, USD: 0.80, UAH: 0.019, CZK: 0.038 }   # one unit of each other currency in it; totals only, rows stay native
 

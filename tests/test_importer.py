@@ -66,7 +66,7 @@ def test_transfers_classified_and_excluded(conn, statements):
     importer.import_file(conn, statements["postfinance"])
     importer.import_file(conn, statements["revolut"])
     rows = repository.list_transactions(conn, categories=["Transfers"], limit=100)
-    assert {t.description[:21] for t in rows} >= {"TRANSFER FROM ACCOUNT", "Payment from MUSTER, ", "Exchanged to EUR"}
+    assert {t.description[:21] for t in rows} >= {"TRANSFER FROM ACCOUNT", "Exchanged to EUR"}
     assert "Transfers" in config.load().names(transfer=True)
 
 

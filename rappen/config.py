@@ -161,8 +161,8 @@ class Config:
             raise ValueError("config.yaml needs a top-level `categories:` list")
         if unknown := set(doc) - _TOP_KEYS:
             raise ValueError(f"unknown top-level key {sorted(unknown)}; known: {sorted(_TOP_KEYS)}")
-        owner = doc.get("owner")
-        if not isinstance(owner, list) or not owner or not all(isinstance(n, str) and n.strip() for n in owner):
+        owner = doc.get("owner", [])
+        if not isinstance(owner, list) or not all(isinstance(n, str) and n.strip() for n in owner):
             raise ValueError("`owner` must list your name as banks print it")
         owners = [_matcher(n)[0] for n in owner]
         self.currency, self.rates = _money(doc)

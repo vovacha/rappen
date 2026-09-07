@@ -2,7 +2,7 @@ import pytest
 
 from rappen import config
 
-HEAD = "version: 1\nowner: [MUSTER]\ncurrency: CHF\n"
+HEAD = "version: 1\ncurrency: CHF\n"
 
 CASES = [
     ("Migros", -20, "Groceries"),
@@ -14,9 +14,8 @@ CASES = [
     ("Exchanged to EUR", 100, "Transfers"),                 # Revolut
     ("Autoexchange Swiss francs", -582.83, "Transfers"),    # Yuh
     ("Exchange United States dollars", 2734.31, "Transfers"),
-    ("Payment from MUSTER, MAX", 500, "Transfers"),         # owner (`owner:` in the yaml)
     ("CREDIT MAILER: ACME TECHNOLOGIES AG SALAERZAHLUNG", 7439.1, "Salary"),  # must not mention the owner
-    ("Transfer to Max Muster", -1000, "Transfers"),
+    ("Transfer to Max Muster", -1000, "Transfers"),        # owner (`owner:` in the yaml)
     ("Transfer from PostFinance AG", 2500, "Transfers"),
     ("Transfer to finpension 3a Retirement Savings Fo", -3629, "Pillar 3a"),    # its own total for the tax return
     ("Zen.com", -1030, "Transfers"),
@@ -30,6 +29,7 @@ CASES = [
     ("McDonalds Zuerich 2016", -11.4, "Restaurants"),
     ("Zürich Duty Free", -32, "General"),
     ("Payment from ERIKA MUSTERMANN", 500, None),             # unknown third party
+    ("Tierarztpraxis Muster", -286.1, None),                # a merchant with one of the owner's words: the owner is a phrase
     ("Amazon", -30, None),                                  # ambiguous: manual
     ("Apple", -9, "Software"),                              # small recurring: App Store/iCloud
     ("Apple", -150, None),                                  # large one-off (device): manual
@@ -82,12 +82,9 @@ BAD_HEADS = [
     "owner: [MUSTER]\ncurrency: CHF\ncategories: []\n",                  # no version: an unversioned file is not trusted
     "version: 0\nowner: [MUSTER]\ncurrency: CHF\ncategories: []\n",
     "version: 2\nowner: [MUSTER]\ncurrency: CHF\ncategories: []\n",     # from a newer rappen
-    "version: 1\ncategories: []\n",                                      # neither owner nor currency
-    "version: 1\ncurrency: CHF\ncategories: []\n",                       # no owner: the placeholder must not pass
-    "version: 1\nowner: [MUSTER]\ncategories: []\n",                     # no base currency
+    "version: 1\ncategories: []\n",                                      # no base currency
     "version: 1\nowner: MUSTER\ncurrency: CHF\ncategories: []\n",
-    "version: 1\nowner: []\ncurrency: CHF\ncategories: []\n",
-    "version: 1\nowner: [MUSTER]\ncurrency: 5\ncategories: []\n",
+    "version: 1\ncurrency: 5\ncategories: []\n",
     HEAD + "owners: [MAX]\ncategories: []\n",                            # a top-level typo would silently drop the key
     HEAD + "rates: [0.94]\ncategories: []\n",
     HEAD + "rates: {EUR: -0.94}\ncategories: []\n",
@@ -102,7 +99,7 @@ def test_malformed_files_are_rejected(bad):
 
 
 def test_base_currency_has_rate_one():
-    money = config.Config("version: 1\nowner: [MUSTER]\ncurrency: EUR\nrates: {USD: 0.9}\ncategories: []\n")
+    money = config.Config("version: 1\ncurrency: EUR\nrates: {USD: 0.9}\ncategories: []\n")
     assert (money.currency, money.rates) == ("EUR", {"USD": 0.9, "EUR": 1.0})
 
 

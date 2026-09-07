@@ -1,31 +1,36 @@
 # rappen
 
-Personal finance for you and your AI agent. Export statements from your banks, import them into
-one SQLite ledger, and ask: what did I spend and on what, how does it compare to last year, what
-did the trip cost, how much is left over each month, what am I worth. The transactions are the
-ledger. Holdings and subscriptions you type in yourself, and your net worth is the sum of the
-holdings. There is no dashboard and nothing runs in the background: the agent is the interface,
-over MCP, and [SKILL.md](SKILL.md) is its manual. Its workflows are the feature list, one line
-per thing you can say and how the agent answers it: read them to see what rappen does.
+Personal finance through your AI agent. Drop your bank statements into the chat and ask: what
+did I spend and on what, how does it compare to last year, what did the trip cost, how much is
+left over each month. The transactions are the ledger. Holdings and subscriptions are optional
+and typed in; net worth is the sum of the holdings. There is no dashboard and nothing runs in
+the background: the agent is the interface, over MCP, and [SKILL.md](SKILL.md) is its manual.
+Its workflows are the feature list, one line per thing you can say and how the agent answers it.
 
 ## Install
 
 Paste this to an agent that speaks MCP and loads skills:
 
 ```
-Install rappen from https://github.com/vovacha/rappen. Register its MCP server for all
-projects: stdio, name `rappen`, command
-`uv run --directory <absolute path of the clone> python -m rappen.mcp_server`.
-Symlink its SKILL.md as a skill named `rappen`, then follow the skill's "First run".
+Install rappen from https://github.com/vovacha/rappen:
+
+1. Clone it.
+2. Register its MCP server for all projects:
+     name:      rappen
+     transport: stdio
+     command:   uv run --directory <absolute path of the clone> python -m rappen.mcp_server
+3. Symlink its SKILL.md as a skill named `rappen`.
+4. If the rappen tools are in this session, follow the skill's "First run"; if they need a new
+   session, say so.
 ```
 
-Setting up is a conversation: the agent asks for your name as your banks print it and your
-currencies, proposes a category tree and which categories are transfers or trip spend, reads the
-plan back, and writes `config.yaml` once you agree. Then export a statement from your bank
-and drop it into the chat. The bank is recognised from the file; a currency without a rate is
-refused until you give one, and merchants that keep coming back become rules.
+Setting up is a conversation: the agent asks for your currencies, proposes a small category
+tree and which categories are transfers or trip spend, reads the plan back, and writes
+`config.yaml` once you agree. Then export a statement from your bank and drop it into the chat.
+The bank is recognised from the file; a currency without a rate is refused until you give one,
+and merchants that keep coming back become rules.
 
-To update, `git pull` the clone and run `uv sync` again, or ask the agent to. The database
+To update, `git pull` the clone, or ask the agent to. The database
 is brought up to date on the next start. If an update changes the `config.yaml` format, your old
 file is rejected with a message saying what to change.
 
@@ -45,15 +50,15 @@ file is rejected with a message saying what to change.
   say so, and are roughly right rather than live.
 - **Two files are the whole state**, `rappen.db` and `config.yaml` in `~/.rappen`. Copy
   them to back up or move.
-- **Nothing is live.** Import whenever you want the numbers current, correct the leftovers,
-  then ask.
+- **Nothing is live.** The numbers are as fresh as the last statement you dropped in. Import,
+  correct the leftovers, then ask.
 
 ## Banks
 
 | Bank | Country | File | Notes |
 |---|---|---|---|
-| PostFinance | Switzerland | PDF | account statement |
-| UBS | Switzerland | CSV | account transactions export |
+| PostFinance | Switzerland | PDF | |
+| UBS | Switzerland | CSV | |
 | Yuh | Switzerland | CSV | exchanges become two rows; stock and crypto orders are dropped |
 | Revolut | Lithuania | CSV | only settled rows are taken: let exports overlap by a few days |
 | Monobank | Ukraine | CSV | export with English column names |

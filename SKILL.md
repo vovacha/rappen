@@ -3,7 +3,7 @@ name: rappen
 description: "Use when the user asks about personal finances tracked in Rappen: spending, trends, trips, savings, budget, net worth and holdings, subscriptions, checks on single charges, tax figures, statement imports, categories and rules, or the database file. Query and maintain the ledger only through Rappen MCP tools."
 license: MIT
 metadata:
-  version: 9.0.0
+  version: 10.0.0
   tags: [personal-finance, rappen, mcp, transactions, cash-flow, trips, net-worth, subscriptions]
 ---
 
@@ -19,14 +19,13 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 **First run**
 
-- *There is no config.yaml yet: every tool says so and names the example.*
-  One conversation, in this order. Every step is a proposal the user approves or changes; only the name is asked outright. Nothing is written before step 6.
-  1. **Name.** Ask for it exactly as their banks print it (`owner`), often surname and given name in capitals and in either order; both go in the list.
-  2. **Currencies.** Ask where they live and which banks they use, then propose the base currency (`currency`) and the other currencies those banks are likely to hold, each with a rate from what you know, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
-  3. **Categories.** Propose a two-level tree after `config.example.yaml`, fitted to what you know so far: rent or own, car, pets, children, pension contributions, investments. Merchants are not proposed; rules come from the first imports.
-  4. **Transfers.** Propose which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
-  5. **Trip spend.** Propose which count as trip spend when a trip's window is tagged: food, transport, accommodation, shopping, entertainment, and not rent, insurance, subscriptions. `trip: true`.
-  6. **Plan.** Read it all back in one message: owner, currency and rates, the tree with its flags. On agreement write the yaml, keeping the example's Transfers patterns (they are the supported banks' own strings) and none of its merchants, owner or rates, then `set_config(text)` and say the ledger is ready for its first statement.
+- *There is no config.yaml yet: every tool says so.*
+  One conversation, in this order. Every step is a proposal the user approves or changes; only the currencies are asked outright. Nothing is written before step 5.
+  1. **Currencies.** Ask what totals are in (`currency`) and which other currencies their accounts might hold, nothing about country or banks. Propose a rate for each, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
+  2. **Categories.** Propose a small two-level tree in the example's names, fitted to what you know of the user, and say what you fitted. Merchants are not proposed; rules come from the first imports.
+  3. **Transfers.** Propose which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
+  4. **Trip spend.** Propose which count as trip spend when a trip's window is tagged: food, transport, accommodation, shopping, entertainment, and not rent, insurance, subscriptions. `trip: true`.
+  5. **Plan.** Read it all back in one message: currency and rates, the tree with its flags. On agreement write the yaml after the example, keeping its Transfers patterns (they are the supported banks' own strings) and none of its merchants or owner, then `set_config(text)` and say the ledger is ready for its first statement.
 - *An import is refused: no rate for a currency.*
   Propose one, have it confirmed, add it under `rates` via `get_config` / `set_config`, import again.
 - *A tool says config.yaml is an older format, and lists what to edit.*
@@ -40,6 +39,8 @@ What the user says, and how to answer it. Category names are the example yaml's;
   Nothing is inserted. A newer export of the same period can still add rows that were pending in the older one.
 - *I categorize the leftovers by hand.*
   `list_transactions(uncategorized=true, date_from, date_to)`, then `set_category(ids, name)` once per category.
+- *A transfer to my own account at another bank was not recognised.*
+  Add the name as that bank printed it under `owner`, via `get_config` / `set_config`; `owner_mention` then catches it.
 - *A merchant keeps coming back and I set it by hand every time.*
   `get_config`, add the pattern under its category, `set_config(text)`. Never a rule for a one-off.
 - *I want a new category, or to rename or split one.*
@@ -147,7 +148,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 ## Rules
 
-1. The ledger is read and changed through the Rappen MCP tools only; the exception is Backup and restore above.
+1. The ledger is read and changed through the Rappen MCP tools only: never SQL, the files behind them, or a client script around them. The exception is Backup and restore above.
 2. Totals come from `cash_flow`. `list_transactions` is capped and for looking at rows.
 3. Categories are the user's: use the names `list_categories` returns, and change stored categories only when asked or where a workflow above says so.
 4. Transfer categories are left out of `cash_flow` unless `include_transfers=true`; a total over them is both legs of every move.

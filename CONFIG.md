@@ -1,15 +1,16 @@
 # The config file
 
-`config.yaml` is the one file you write: who you are, what totals are in, and the categories
+`config.yaml` is the one file you write: what totals are in, and the categories
 with the rules that assign them. It lives next to `rappen.db` in `~/.rappen`, and nothing works
-until it exists: every tool says so and points at `config.example.yaml`, which your agent adapts
-and installs with `set_config`. Every command reads the file, so a change needs no restart.
+until it exists: every tool says so and points at `config.example.yaml`, the format reference.
+Your agent writes yours in the skill's First run and installs it with `set_config`. Every command
+reads the file, so a change needs no restart.
 
 ## The file
 
 ```yaml
 version: 1                    # the file format (see Updates)
-owner: [MUSTER, MAX]          # your name as banks print it (see owner_mention)
+owner: [MAX MUSTER]           # optional: your name as a bank prints it (see owner_mention)
 currency: CHF                 # what totals are in
 rates: { EUR: 0.94, USD: 0.80 }   # one unit of each other currency in it
 
@@ -32,10 +33,10 @@ Anything else at the top level, in a node or in a pattern, a misspelt key includ
 
 ## Owner, currency, rates
 
-`owner` lists your name as your banks print it, so the `owner_mention` pattern recognises money
-moved between your own accounts; it is required, so no placeholder name can slip through.
+`owner` is optional: your name as a bank prints it, so the `owner_mention` pattern recognises
+money moved between your own accounts.
 
-`currency` is what every total is in; rows keep their own. It is required too.
+`currency` is what every total is in; rows keep their own. It is required.
 
 `rates` gives one unit of each other currency in it, typed by hand and never fetched, and grows
 as needed: a statement in a currency that has no rate is rejected before anything is imported,
@@ -73,8 +74,7 @@ Guards, all optional and all required to hold: `sign: in` or `out`, `min_amount`
 
 The longest matching pattern wins across all categories. A tie between two categories, or no
 match at all, leaves the row uncategorized for you to set by hand. `owner_mention` outranks
-everything, so keep `owner` to what only your own transfers print: an employer or landlord
-whose name contains yours would land in Transfers.
+everything, so keep `owner` to the full phrases only your own transfers print.
 
 ## Changing the config
 
