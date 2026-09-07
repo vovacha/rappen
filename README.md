@@ -20,9 +20,10 @@ Install rappen from https://github.com/vovacha/rappen:
      transport: stdio
      command:   uv run --directory <absolute path of the clone> python -m rappen.mcp_server
 3. Symlink its SKILL.md as a skill named `rappen`.
-4. Reload MCP servers, then call `get_config`: "no config.yaml yet" means it works. Only then
-   follow the skill's "First run".
+4. Say how I reload MCP servers here.
 ```
+
+Reload as told, then say `Set up rappen`.
 
 Setting up is a conversation: the agent asks for your currencies, proposes a small category
 tree and which categories are transfers or trip spend, reads the plan back, and writes

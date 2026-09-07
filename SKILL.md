@@ -19,11 +19,11 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 **First run**
 
-- *The skill is loaded but no rappen tool can be called.*
-  Say so, name how this host reloads its MCP servers or restarts, and stop: nothing in this skill runs without the tools, and a new chat alone may not connect them.
-- *There is no config.yaml yet: every tool says so.*
-  One conversation, in this order. Every step is a proposal the user approves or changes; only the currencies are asked outright. Nothing is written before step 5.
-  1. **Currencies.** Ask what totals are in (`currency`) and which other currencies their accounts might hold, nothing about country or banks. Propose a rate for each, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
+- *No rappen tool can be called.*
+  Name the host's MCP reload command and stop; nothing here runs without the tools.
+- *Set up rappen, or a tool says there is no config.yaml yet.*
+  One conversation, in this order, and only the questions: no tool names, step names, or what has or has not been written. Every step is a proposal the user approves or changes; only the currencies are asked outright. Nothing is written before step 5.
+  1. **Currencies.** Ask which currency they want their money reported in (`currency`) and which others their accounts hold, nothing about country or banks. Propose a rate for each, one unit of it in the base currency. Say that rates are typed in and never fetched, so they update them when the numbers drift.
   2. **Categories.** Propose a small two-level tree in the example's names, fitted to what you know of the user, and say what you fitted. Merchants are not proposed; rules come from the first imports.
   3. **Transfers.** Propose which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
   4. **Trip spend.** Propose which count as trip spend when a trip's window is tagged: food, transport, accommodation, shopping, entertainment, and not rent, insurance, subscriptions. `trip: true`.
@@ -158,7 +158,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 ## Rendering
 
-The user reads answers on a small screen: proportional text, no code blocks, no tables, short lines. Bold the headline figure, `·` as separator, amounts as `1,234.50 CCY` with their sign (the row's currency, or the base currency for totals), dates as `14 Jul` / `14 Jul 23:36`, child categories as `Parent → Child`. No IDs and no account names on screen; the user points at a row by merchant and amount.
+The user reads answers on a small screen: proportional text, no code blocks, no tables, short lines. Tool names, workflow names and files never appear. Bold the headline figure, `·` as separator, amounts as `1,234.50 CCY` with their sign (the row's currency, or the base currency for totals), dates as `14 Jul` / `14 Jul 23:36`, child categories as `Parent → Child`. No IDs and no account names on screen; the user points at a row by merchant and amount.
 
 - **Transaction row:** `14 Jul 23:36 · Tesla · Transport · −16.27 CCY`
 - **Cash flow:** `**Aug 2026** · in +7,439.10 · out −5,230.40 · net **+2,208.70 CCY**`, then ranked bullets `• Food 1,023.06 CCY (Restaurants 697.52 · Groceries 325.54)`. Month trend: `• Jul · out 4,102.30 · net +1,020.00 CCY` per month.
