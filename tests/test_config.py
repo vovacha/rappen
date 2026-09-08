@@ -1,6 +1,6 @@
 import pytest
 
-from rappen import config
+from rappen import config, service
 
 HEAD = "version: 1\ncurrency: CHF\n"
 
@@ -118,5 +118,6 @@ def test_first_set_config_needs_no_file_or_directory(home, monkeypatch):
     monkeypatch.setenv("RAPPEN_HOME", str(home / "fresh"))
     with pytest.raises(ValueError, match="set_config"):
         config.text()
+    assert service.get_config().endswith(config.EXAMPLE.read_text(encoding="utf-8"))
     saved = config.save((home / "config.yaml").read_text(encoding="utf-8"))
     assert config.load().names() == saved.names()

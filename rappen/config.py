@@ -208,8 +208,8 @@ class Config:
 def text() -> str:
     location = path()
     if not location.exists():
-        raise ValueError(f"no {location} yet; write one with set_config, after the worked example "
-                         f"{EXAMPLE} (its header gives the format)")
+        raise ValueError(f"no {location} yet; get_config returns the example to write yours after, "
+                         "set_config installs it")
     return location.read_text(encoding="utf-8")
 
 

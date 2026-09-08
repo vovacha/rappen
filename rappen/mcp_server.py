@@ -104,7 +104,9 @@ def categorize() -> dict:
 
 @mcp.tool()
 def get_config() -> str:
-    """The current config.yaml (owner, currency and rates, the category taxonomy and its rules) as text."""
+    """The current config.yaml (owner, currency and rates, the category taxonomy and its rules)
+    as text. Before one exists it is the example, whose header gives the format: write yours
+    after it and install it with set_config."""
     return service.get_config()
 
 

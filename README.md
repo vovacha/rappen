@@ -41,7 +41,8 @@ format, your old file is refused with a message saying what to change.
 - **Transactions.** Every bank line becomes one row, with a category and, once you tag one, a
   trip. Every spending figure is a sum over those rows.
   - **Categories.** Rules in `config.yaml` fill in what they match; the rest you set by hand,
-    and a category set by hand is never overwritten ([CONFIG.md](CONFIG.md)).
+    and a category set by hand is never overwritten ([CONFIG.md](CONFIG.md),
+    [example](rappen/config.example.yaml)).
   - **Transfers.** Money moved between your own accounts is neither income nor spending and
     stays out of the sums.
   - **Trips.** Name a trip and its dates; the food, transport and hotels in that window are the

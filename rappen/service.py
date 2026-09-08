@@ -121,7 +121,11 @@ def categorize() -> dict:
 
 
 def get_config() -> str:
-    return config.text()
+    """The config.yaml text; before one exists, the example it is written after."""
+    if config.path().exists():
+        return config.text()
+    return ("# No config.yaml yet: this is config.example.yaml. Write yours after it; set_config installs it.\n"
+            + config.EXAMPLE.read_text(encoding="utf-8"))
 
 
 def set_config(text: str) -> dict:

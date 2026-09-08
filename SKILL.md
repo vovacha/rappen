@@ -22,10 +22,10 @@ What the user says, and how to answer it. Category names are the example yaml's;
 - *Set up rappen, or a tool says there is no config.yaml yet.*
   One conversation, in this order, and only the questions on screen: no tool names, no step names, nothing about what has or has not been written. Only the currencies are asked outright; the rest is proposed and the user changes it. Nothing is written before step 5.
   1. **Currencies.** Word for word: "Which currency should I report in, and which others show up on your statements?" Nothing about country, banks or rates. Propose a rate for each other currency yourself, one unit of it in the base currency, and say rates are typed in and never fetched.
-  2. **Categories.** A small two-level tree in the example's names, fitted to what you know of the user. No merchants: rules come from the first imports.
+  2. **Categories.** A small two-level tree fitted to what you know of the user, short names. No merchants: rules come from the first imports. No Travel node: a trip is a window over everyday categories; Accommodation is its own.
   3. **Transfers.** Which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
   4. **Trip spend.** Which count when a trip's window is tagged: food, transport, accommodation, shopping, entertainment; not rent, insurance, subscriptions. `trip: true`.
-  5. **Plan.** Read it all back in one message. On agreement write the yaml after the example, keeping its Transfers patterns (the supported banks' own strings) and none of its merchants or owner, `set_config(text)`, and say the ledger is ready for its first statement.
+  5. **Plan.** Read it all back in one message. On agreement `get_config`, which returns the example while there is none: the file is its header, the agreed currencies and rates, the plan's tree, and its Transfers patterns (the supported banks' own strings); nothing else of it, no merchant and no owner. `set_config(text)`, and say the ledger is ready for its first statement.
 - *An import is refused: no rate for a currency.*
   Propose one, have it confirmed, add it under `rates` via `get_config` / `set_config`, import again.
 - *A tool says config.yaml is an older format, and lists what to edit.*

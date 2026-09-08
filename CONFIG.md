@@ -2,9 +2,9 @@
 
 `config.yaml` is the one file you write: what totals are in, and the categories
 with the rules that assign them. It lives next to `rappen.db` in `~/.rappen`, and nothing works
-until it exists: every tool says so and points at `config.example.yaml`, the format reference.
-Your agent writes yours in the skill's First run and installs it with `set_config`. Every command
-reads the file, so a change needs no restart.
+until it exists: every tool says so, and `get_config` returns `config.example.yaml`, the format
+reference, until yours replaces it. Your agent writes yours in the skill's First run and installs
+it with `set_config`. Every command reads the file, so a change needs no restart.
 
 ## The file
 
