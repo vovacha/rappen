@@ -19,15 +19,13 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 **First run**
 
-- *No rappen tool can be called.*
-  Name the host's MCP reload command and stop; nothing here runs without the tools.
 - *Set up rappen, or a tool says there is no config.yaml yet.*
-  One conversation, in this order, and only the questions: no tool names, step names, or what has or has not been written. Every step is a proposal the user approves or changes; only the currencies are asked outright. Nothing is written before step 5.
-  1. **Currencies.** One question, word for word: "What should be your main currency, and which other currencies do you use?" (`currency`). Nothing about country, banks or rates. Rates are never asked for: from the answer, propose one for each other currency yourself, one unit of it in the base currency, and say they are typed in and never fetched, so they update them when the numbers drift.
-  2. **Categories.** Propose a small two-level tree in the example's names, fitted to what you know of the user, and say what you fitted. Merchants are not proposed; rules come from the first imports.
-  3. **Transfers.** Propose which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
-  4. **Trip spend.** Propose which count as trip spend when a trip's window is tagged: food, transport, accommodation, shopping, entertainment, and not rent, insurance, subscriptions. `trip: true`.
-  5. **Plan.** Read it all back in one message: currency and rates, the tree with its flags. On agreement write the yaml after the example, keeping its Transfers patterns (they are the supported banks' own strings) and none of its merchants or owner, then `set_config(text)` and say the ledger is ready for its first statement.
+  One conversation, in this order, and only the questions on screen: no tool names, no step names, nothing about what has or has not been written. Only the currencies are asked outright; the rest is proposed and the user changes it. Nothing is written before step 5.
+  1. **Currencies.** Word for word: "Which currency should I report in, and which others show up on your statements?" Nothing about country, banks or rates. Propose a rate for each other currency yourself, one unit of it in the base currency, and say rates are typed in and never fetched.
+  2. **Categories.** A small two-level tree in the example's names, fitted to what you know of the user. No merchants: rules come from the first imports.
+  3. **Transfers.** Which of those are money moved, not earned or spent: own accounts and exchanges, pension savings, loans. `transfer: true`.
+  4. **Trip spend.** Which count when a trip's window is tagged: food, transport, accommodation, shopping, entertainment; not rent, insurance, subscriptions. `trip: true`.
+  5. **Plan.** Read it all back in one message. On agreement write the yaml after the example, keeping its Transfers patterns (the supported banks' own strings) and none of its merchants or owner, `set_config(text)`, and say the ledger is ready for its first statement.
 - *An import is refused: no rate for a currency.*
   Propose one, have it confirmed, add it under `rates` via `get_config` / `set_config`, import again.
 - *A tool says config.yaml is an older format, and lists what to edit.*
@@ -36,110 +34,58 @@ What the user says, and how to answer it. Category names are the example yaml's;
 **Keeping the ledger true**
 
 - *At month end I import the statements.*
-  `import_file(path)`, one file at a time.
-- *I import a file a second time.*
-  Nothing is inserted. A newer export of the same period can still add rows that were pending in the older one.
+  `import_file(path)`, one file at a time. A file imported twice inserts nothing; a newer export of the same period can still add rows that were pending in the older one.
 - *I categorize the leftovers by hand.*
   `list_transactions(uncategorized=true, date_from, date_to)`, then `set_category(ids, name)` once per category.
 - *A transfer to my own account at another bank was not recognised.*
   Add the name as that bank printed it under `owner`, via `get_config` / `set_config`; `owner_mention` then catches it.
 - *A merchant keeps coming back and I set it by hand every time.*
   `get_config`, add the pattern under its category, `set_config(text)`. Never a rule for a one-off.
-- *I want a new category, or to rename or split one.*
-  `get_config`, edit the taxonomy, `set_config`. Rows keep the old name until `clear_categories(old_name)` and `categorize`.
-- *A rule was wrong.*
-  Fix it via `get_config` and `set_config`, then `clear_categories(name)` and `categorize`. `clear_categories()` without a name loses every hand-set category: only on explicit request.
+- *I want a new category, or to rename or split one. A rule was wrong.*
+  `get_config`, edit, `set_config`. Rows keep the old name until `clear_categories(old_name)` and `categorize`. `clear_categories()` without a name loses every hand-set category: only on explicit request.
 - *I want to edit config.yaml myself.*
   `get_config`, send it as a file; `set_config` with the full text when it comes back.
 
-**Spending overview**
+**Questions over the ledger**
 
-- *What I spent this month by category, and what came in.*
-  `cash_flow(date_from, date_to, group_by="category")`.
-- *The same for a year, month by month.*
-  `group_by="month"` over the year.
-- *The same for one bank only, or one currency.*
-  `account=` / `currency=`, or `group_by="account"` / `"currency"`.
-
-**Trend detection**
-
-- *Is eating out higher than six months ago?*
-  `cash_flow(category="Restaurants", group_by="month")` over both periods.
-- *Which categories grew most against last year?*
-  One `cash_flow(group_by="category")` per year, bucket by bucket.
-- *Groceries feel expensive: more visits, or bigger baskets?*
-  `cash_flow(category="Groceries", group_by="month")`: `txn_count` is the visits, `expense / txn_count` the basket.
-- *Did the numbers change after I cancelled something, switched insurer, moved, got a raise?*
-  Two `cash_flow` calls, before and after the date.
+- *What I spent this month by category, and what came in. The same for a year month by month, for one bank, for one currency.*
+  `cash_flow(date_from, date_to, group_by="category" | "month" | "account" | "currency")`, `account=` / `currency=` to narrow.
+- *Is eating out higher than six months ago? Which categories grew most? More grocery visits, or bigger baskets? Did the numbers change after I moved, switched insurer, got a raise?*
+  `cash_flow` per window, bucket by bucket; `txn_count` is the visits, `expense / txn_count` the basket.
+- *How much did I save this year, and where does the pace land in December? What share of my income stays? What is free on an average month, and what does a rent increase do to it? How many months does my net worth cover?*
+  `cash_flow` over the window: saved is `net`, the share `net / income`, the pace net per elapsed month; `net_worth` over the average monthly `expense`.
+- *Which large payments come up next quarter?*
+  Last year's same quarter with `list_transactions(date_from, date_to, direction="out")`, plus the yearly rows of `list_subscriptions`.
+- *Spent, remaining and pace per category; move an amount between budgets.*
+  Budgets are not built. Say so; offer `cash_flow(group_by="category")` for the year as the starting point.
+- *What is this charge from Tuesday? Did the hotel charge me twice? Did the rent go out, did the refund arrive?*
+  `list_transactions(search=... | category=..., date_from, date_to)`.
+- *What did I pay into 3a this year? Health insurance, medical costs, taxes paid, per year.*
+  `cash_flow(category=...)` per category and year; `include_transfers=true` for 3a.
 
 **Trips**
 
 - *I name a trip and its dates.*
-  `set_trip(name, date_from, date_to)`, once the window is categorized.
+  `set_trip(name, date_from, date_to)`, once the window is categorized. A season of several weekends is `set_trip` once per weekend, same name.
 - *The flights and the hotel were paid months earlier.*
   `set_trip_rows(ids, name)`; `set_trip_rows(ids, None)` removes a stray, like a laptop bought on the road.
-- *What did the trip cost, in total and per day?*
-  `cash_flow(trip=name)`: the cost is `−net`. Per day over the trip's dates, which the user gives; Rappen does not keep them.
-- *What did I spend on the trip, per category?*
-  `cash_flow(trip=name, group_by="category")`.
+- *What did the trip cost, in total, per day, per category? What did I spend on trips this year?*
+  `cash_flow(trip=name)`: the cost is `−net`, per day over the dates the user gives; Rappen does not keep them. `group_by="category"` for the split, `group_by="trip"` over the year, `trip="*"` for the total.
 - *My companion paid me back part of it. I paid a friend my share of the apartment.*
   `set_category(ids, ...)` to what it was (`Other Income`, `Accommodation`), then `set_trip_rows(ids, name)`; the cost above nets it out.
-- *What did I spend on trips this year?*
-  `cash_flow(group_by="trip", date_from, date_to)`; `trip="*"` for the total.
-- *A ski season is several weekends.*
-  `set_trip` once per weekend, same name.
 - *This category should count as trip spend.*
   `trip: true` on it via `get_config` / `set_config`, then `set_trip` again with the same name and dates.
 - *I got a trip's name or dates wrong.*
   `delete_trip(name)` untags every row, hand-attached ones included; then `set_trip` again and re-attach the pre-paid rows.
 
-**Budget tracking**
+**Net worth and subscriptions**
 
-- *How much is free on an average month, and what does a rent increase do to it?*
-  `cash_flow(group_by="month")`: average `net`, minus the increase.
-- *Which large payments come up next quarter: insurance, taxes, yearly renewals?*
-  Last year's same quarter with `list_transactions(date_from, date_to, direction="out")`, and the yearly rows of `list_subscriptions`.
-- *How many months of expenses does my net worth cover?*
-  `net_worth` over the average monthly `expense`.
-- *Spent, remaining and pace per category; move an amount between categories; next year's budgets from this year's actuals.*
-  Budgets are not built. Say so; offer `cash_flow(group_by="category")` for the year as the starting point.
-
-**Savings**
-
-- *How much did I save so far this year, and where does that pace land in December?*
-  `cash_flow(date_from=1 Jan, date_to=today)`: saved is `net`; the pace is net per elapsed month, times twelve.
-- *What share of my income stays, now and a year ago?*
-  `net / income`, for both windows.
-
-**Subscriptions**
-
-- *Everything that renews, with the yearly total.*
-  `list_subscriptions`; the yearly total per currency is monthly × 12 plus the yearly ones.
-- *Add or change a subscription. Pause or cancel one.*
-  `set_subscription(...)`; paused is `active=false`. `delete_subscription` only on explicit request.
-
-**Net worth**
-
-- *My net worth now: accounts, pillars, deposits, crypto and stocks, loans out, debts.*
-  `net_worth`.
-- *I checked the app, Revolut holds 4200 now. The yearly 3a statement came.*
-  `set_holding("revolut", 4200, "all currencies")`; roughly right, not live.
+- *My net worth now. I checked the app, Revolut holds 4200 now. The yearly 3a statement came.*
+  `net_worth`; `set_holding("revolut", 4200, "all currencies")`, roughly right rather than live.
 - *I lent money to a friend.*
   `set_holding(name, amount)` as a receivable; its rows `set_category(ids, "Loans")`. When repaid, `delete_holding(name)` or set what is still open.
-
-**Checks**
-
-- *What is this charge from Tuesday? Did the hotel charge me twice?*
-  `list_transactions(search=..., date_from, date_to)`.
-- *Did the rent go out, did the salary or the airline refund arrive?*
-  `list_transactions(category=..., date_from, date_to)`, or `search`.
-
-**Tax return**
-
-- *What did I pay into 3a this year?*
-  `cash_flow(category="Pillar 3a", include_transfers=true, date_from, date_to)`.
-- *Health insurance premiums, medical costs, taxes paid, per year.*
-  `cash_flow(category=...)` per category and year.
+- *Everything that renews, with the yearly total. Add, change, pause or cancel one.*
+  `list_subscriptions`, yearly total per currency as monthly × 12 plus the yearly ones; `set_subscription(...)`, paused is `active=false`. `delete_subscription` only on explicit request.
 
 **Backup and restore**
 
@@ -150,7 +96,7 @@ What the user says, and how to answer it. Category names are the example yaml's;
 
 ## Rules
 
-1. The ledger is read and changed through the Rappen MCP tools only: never SQL, the files behind them, or a client script around them. Tools that are not callable are reported, not replaced. The exception is Backup and restore above.
+1. The ledger is read and changed through the Rappen MCP tools only: never SQL, the files behind them, or a client script around them. Tools that are not callable are reported, not replaced by the CLI or a script of your own. The exception is Backup and restore above.
 2. Totals come from `cash_flow`. `list_transactions` is capped and for looking at rows.
 3. Categories are the user's: use the names `list_categories` returns, and change stored categories only when asked or where a workflow above says so.
 4. Transfer categories are left out of `cash_flow` unless `include_transfers=true`; a total over them is both legs of every move.

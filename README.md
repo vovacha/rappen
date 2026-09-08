@@ -1,60 +1,69 @@
 # rappen
 
-Personal finance through your AI agent. Drop your bank statements into the chat and ask: what
-did I spend and on what, how does it compare to last year, what did the trip cost, how much is
-left over each month. The transactions are the ledger. Holdings and subscriptions are optional
-and typed in; net worth is the sum of the holdings. There is no dashboard and nothing runs in
-the background: the agent is the interface, over MCP, and [SKILL.md](SKILL.md) is its manual.
-Its workflows are the feature list, one line per thing you can say and how the agent answers it.
+Personal finance through your AI agent. Export a statement from your bank, drop it into the
+chat, and ask:
 
-## Install
+- Where did the money go this month?
+- Am I eating out more than a year ago?
+- What did the Balkans trip cost, per day?
+- If rent goes up 200, what is left each month?
+- How many months could I live off what I have?
 
-Paste this to an agent that speaks MCP and loads skills:
+There is no app and no dashboard: the agent is the interface, over MCP, and [SKILL.md](SKILL.md)
+is its manual.
+
+## Setup
+
+Paste this to an agent with MCP and skills:
 
 ```
 Install rappen from https://github.com/vovacha/rappen:
 
 1. Clone it and run `uv sync` in the clone.
 2. Register its MCP server for all projects:
-     name:      rappen
-     transport: stdio
-     command:   uv run --directory <absolute path of the clone> python -m rappen.mcp_server
+     name:    rappen
+     command: uv run --directory <absolute path of the clone> python -m rappen.mcp_server
 3. Symlink its SKILL.md as a skill named `rappen`.
-4. Say how I reload MCP servers here.
+4. Reload the MCP servers yourself if you can; if only I can, tell me how and wait.
+5. Set up my ledger as SKILL.md says.
 ```
 
-Reload as told, then say `Set up rappen`.
+If the agent stops to ask for a reload, reload and say `Set up rappen`.
 
-Setting up is a conversation: the agent asks for your currencies, proposes a small category
-tree and which categories are transfers or trip spend, reads the plan back, and writes
-`config.yaml` once you agree. Then export a statement from your bank and drop it into the chat.
-The bank is recognised from the file; a currency without a rate is refused until you give one,
-and merchants that keep coming back become rules.
+Setup is a short conversation: the agent asks which currencies you use, proposes a category
+tree, and writes `config.yaml` once you agree. Then drop in your first statement.
 
-To update, `git pull` the clone, or ask the agent to. The database
-is brought up to date on the next start. If an update changes the `config.yaml` format, your old
-file is rejected with a message saying what to change.
+To update, `git pull` the clone, or ask the agent to. If an update changes the `config.yaml`
+format, your old file is refused with a message saying what to change.
 
 ## How it works
 
-- **Transactions are the ledger.** One row per bank line, in its own currency, with a category
-  and, when you tag one, a trip. Every total is a sum over them; money moved between your own
-  accounts is a transfer and stays out of it.
-  - **You own the categories.** Rules in `config.yaml` fill in what they match; the rest you
-    set by hand, and a category set by hand is never overwritten ([CONFIG.md](CONFIG.md)).
-  - **Re-importing is safe.** A file imported twice adds nothing; a newer export of the same
-    period adds only the rows that were pending in the older one.
-  - **Rows keep their currency; totals are in yours.** The base currency and the rates are
-    numbers you write in `config.yaml`; nothing is fetched.
-- **Holdings and subscriptions are typed in**, never derived. Holdings are what you own and owe
-  and add up to your net worth; subscriptions are the list of what renews. Both change when you
-  say so, and are roughly right rather than live.
-- **Two files are the whole state**, `rappen.db` and `config.yaml` in `~/.rappen`. Copy
-  them to back up or move.
-- **Nothing is live.** The numbers are as fresh as the last statement you dropped in. Import,
-  correct the leftovers, then ask.
+- **Transactions.** Every bank line becomes one row, with a category and, once you tag one, a
+  trip. Every spending figure is a sum over those rows.
+  - **Categories.** Rules in `config.yaml` fill in what they match; the rest you set by hand,
+    and a category set by hand is never overwritten ([CONFIG.md](CONFIG.md)).
+  - **Transfers.** Money moved between your own accounts is neither income nor spending and
+    stays out of the sums.
+  - **Trips.** Name a trip and its dates; the food, transport and hotels in that window are the
+    trip's cost. Flights paid earlier you attach by hand.
+  - **Currencies.** Rows stay in the currency they were paid in; sums are in the currency you
+    chose at setup.
+- **Holdings.** What you own and owe, typed in. Their sum is your net worth.
+- **Subscriptions.** The list of what renews, typed in.
+- **Two files are the whole state**, `rappen.db` and `config.yaml` in `~/.rappen`. Copy them to
+  back up or move.
+- **Nothing is live.** The numbers are as fresh as the last statement you dropped in.
 
-## Banks
+The whole data model:
+
+```
+transaction    date · description · amount · currency · account · category · trip
+holding        name · value · description
+subscription   name · amount · currency · monthly | yearly · active
+config.yaml    currency · rates · categories, each with its rules and transfer / trip flags
+```
+
+## Supported banks
 
 | Bank | Country | File | Notes |
 |---|---|---|---|
