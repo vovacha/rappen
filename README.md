@@ -9,8 +9,8 @@ chat, and ask:
 - If rent goes up 200, what is left each month?
 - How many months could I live off what I have?
 
-There is no app and no dashboard: the agent is the interface, over MCP, and [SKILL.md](SKILL.md)
-is its manual.
+There is no app, no dashboard and no bank link: the agent is the interface, over MCP, and
+[SKILL.md](SKILL.md) is its manual. The numbers are as fresh as the last statement you dropped in.
 
 ## Setup
 
@@ -36,7 +36,7 @@ tree, and writes `config.yaml` once you agree. Then drop in your first statement
 To update, `git pull` the clone, or ask the agent to. If an update changes the `config.yaml`
 format, your old file is refused with a message saying what to change.
 
-## How it works
+## The ledger
 
 - **Transactions.** Every bank line becomes one row, with a category and, once you tag one, a
   trip. Every spending figure is a sum over those rows.
@@ -49,20 +49,18 @@ format, your old file is refused with a message saying what to change.
     trip's cost. Flights paid earlier you attach by hand.
   - **Currencies.** Rows stay in the currency they were paid in; sums are in the currency you
     chose at setup.
-- **Holdings.** What you own and owe, typed in. Their sum is your net worth.
-- **Subscriptions.** The list of what renews, typed in.
-- **Two files are the whole state**, `rappen.db` and `config.yaml` in `~/.rappen`. Copy them to
-  back up or move.
-- **Nothing is live.** The numbers are as fresh as the last statement you dropped in.
+- **Holdings.** What you own and owe, typed in: a bank balance, cash, a pension, a loan. Their
+  sum is your net worth.
+- **Subscriptions.** What renews, typed in if you want to track it.
 
-The whole data model:
+All of it is two files in `~/.rappen`; copy them to back up or move:
 
-```
-transaction    date · description · amount · currency · account · category · trip
-holding        name · value · description
-subscription   name · amount · currency · monthly | yearly · active
-config.yaml    currency · rates · categories, each with its rules and transfer / trip flags
-```
+| File | Table | Fields |
+|---|---|---|
+| `rappen.db` | transactions | date, description, amount, currency, account, category, trip |
+| | holdings | name, value, description |
+| | subscriptions | name, amount, currency, monthly or yearly, active |
+| `config.yaml` | | currency, rates, categories, each with its rules and its transfer and trip flags |
 
 ## Supported banks
 
